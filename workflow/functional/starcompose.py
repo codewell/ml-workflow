@@ -4,7 +4,7 @@ def starcompose(*transforms):
     '''
     left compose functions together and expand tuples to args
 
-    See starcompose.debug
+    Use starcompose.debug for verbose output when debugging
     '''
     def _compose(*x):
         for t in transforms:

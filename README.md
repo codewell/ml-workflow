@@ -6,7 +6,7 @@
 
 ## Usage
 
-    from workflow import starcompose
+    from workflow.functional import starcompose
 
     train_example = starcompose(
         partial(map, read_example)
