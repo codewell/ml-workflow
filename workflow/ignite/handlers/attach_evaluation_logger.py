@@ -1,7 +1,7 @@
 from tqdm import tqdm
 from ignite.engine import Events
-from .tqdm_print import tqdm_print
-from .write_engine_metrics import write_engine_metrics
+from workflow.ignite.tqdm_print import tqdm_print
+from workflow.ignite.write_engine_metrics import write_engine_metrics
 
 
 def attach_evaluation_logger(

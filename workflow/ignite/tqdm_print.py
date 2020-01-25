@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from .constants import TQDM_OUTFILE
+from workflow.ignite.constants import TQDM_OUTFILE
 
 
 def tqdm_print(string):

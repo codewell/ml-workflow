@@ -1,6 +1,6 @@
 from tqdm import tqdm
 from ignite.engine import Events
-from .constants import TQDM_OUTFILE
+from workflow.ignite.constants import TQDM_OUTFILE
 
 
 def attach_train_progress_bar(trainer, config):
