@@ -9,9 +9,9 @@
     from workflow.functional import starcompose
 
     train_example = starcompose(
-        partial(map, read_example)
-        partial(map, augment)
-        partial(map, preprocess)
+        read_example,
+        augment,
+        preprocess,
     )
 
 ## Development

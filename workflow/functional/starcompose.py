@@ -37,10 +37,18 @@ starcompose.debug = starcompose_debug
 def test_starcompose():
     from functools import partial
 
-    test = starcompose(
-        zip,
-        partial(map, sum),
-        list,
-    )
+    test = starcompose(lambda x, y: x + y)
+    if test(3, 5) != 8:
+        raise Exception('Two args inputs failed')
 
-    test(range(10), range(10))
+    test = starcompose(lambda x: sum(x))
+    if test((3, 5)) != 8:
+        raise Exception('Tuple input failed')
+
+    test = starcompose(
+        lambda x: (x, x),
+        lambda x, y: x + y,
+        lambda x: x * 2,
+    )
+    if test(10) != 40:
+        raise Exception('Expanded tuple for inner function failed')
