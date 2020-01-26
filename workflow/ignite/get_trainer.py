@@ -5,31 +5,29 @@ import workflow
 
 def get_trainer(model, criterion, optimizer, config, track_loss=True):
 
-    def train_step(engine, batch):
+    def process_batch(engine, batch):
 
         model.train()
-        accumulation_steps = config.get('accumulation_steps', 1)
+        n_batches_per_step = config.get('n_batches_per_step', 1)
 
-        if engine.state.iteration % accumulation_steps == 0:
+        if engine.state.iteration % n_batches_per_step == 0:
             optimizer.zero_grad()
 
         batch = workflow.torch.batch_to_model_device(batch, model)
-        if 'mixup_alpha' in config:
-            batch = workflow.torch.mixup_batch(batch, alpha=config['mixup_alpha'])
         output = model(batch['features'])
-        loss = criterion(output, batch['targets']) / accumulation_steps
+        loss = criterion(output, batch['targets']) / n_batches_per_step
         loss.backward()
 
-        if engine.state.iteration % accumulation_steps == 0:
+        if engine.state.iteration % n_batches_per_step == 0:
             if config.get('clip_norm', False):
                 torch.nn.utils.clip_grad_norm_(
                     model.parameters(), config['clip_norm']
                 )
             optimizer.step()
 
-        return dict(loss=loss.item() * accumulation_steps)
+        return dict(loss=loss.item() * n_batches_per_step)
 
-    trainer = ignite.engine.Engine(train_step)
+    trainer = ignite.engine.Engine(process_batch)
     if track_loss:
         ignite.metrics.RunningAverage(
             output_transform=lambda x: x['loss'], alpha=0.98
