@@ -1,14 +1,14 @@
 import torch
 import ignite
-import workflow
+from workflow.torch import model_device, to_device
 
 
-def get_evaluator(model):
-    
-    def evaluate_step(engine, batch):
+def get_evaluator(model):    
+    device = model_device(model)
 
+    def process_batch(engine, batch):
         model.eval()
-        batch = workflow.torch.batch_to_model_device(batch, model)
+        batch = to_device(batch, model)
         with torch.no_grad():
             output = model(batch['features'])
 
@@ -17,4 +17,4 @@ def get_evaluator(model):
             targets=batch['targets'],
         )
     
-    return ignite.engine.Engine(evaluate_step)
+    return ignite.engine.Engine(process_batch)

@@ -1,19 +1,19 @@
 import torch
 import ignite
-import workflow
+from workflow.torch import model_device, to_device
 
 
 def get_trainer(model, criterion, optimizer, config, track_loss=True):
+    device = model_device(model)
 
     def process_batch(engine, batch):
-
         model.train()
         n_batches_per_step = config.get('n_batches_per_step', 1)
 
         if engine.state.iteration % n_batches_per_step == 1:
             optimizer.zero_grad()
 
-        batch = workflow.torch.batch_to_model_device(batch, model)
+        batch = to_device(batch, device)
         output = model(batch['features'])
         loss = criterion(output, batch['targets']) / n_batches_per_step
         loss.backward()
