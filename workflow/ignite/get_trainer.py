@@ -10,7 +10,7 @@ def get_trainer(model, criterion, optimizer, config, track_loss=True):
         model.train()
         n_batches_per_step = config.get('n_batches_per_step', 1)
 
-        if engine.state.iteration % n_batches_per_step == 0:
+        if engine.state.iteration % n_batches_per_step == 1:
             optimizer.zero_grad()
 
         batch = workflow.torch.batch_to_model_device(batch, model)
