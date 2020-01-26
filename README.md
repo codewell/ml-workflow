@@ -2,7 +2,7 @@
 
 ## Install
 
-    pip install git+https://github.com/codewell/ml-workflow.git
+    pip install ml-workflow
 
 ## Usage
 
@@ -15,6 +15,7 @@
     )
 
 ## Development
+There can be differences with imports when installed with editable `-e` flag.
 
 ### Prepare and run tests
 
@@ -36,3 +37,18 @@ project environment.
     source guild-env
     cd path/to/ml-workflow
     pip install -e .
+
+## Update package requirements
+Modify `install_requires` in `setup.py`.
+
+## Update development requirements
+
+    source guild-env
+    pip freeze > requirements.txt
+
+## Upload new version to pypi
+Update version in `setup.py` and then:
+
+    source guild-env
+    python setup.py sdist
+    twine upload dist/ml-workflow-<VERSION>.tar.gz

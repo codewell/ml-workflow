@@ -1,5 +1,5 @@
-import workflow.ignite.handlers
-import workflow.ignite.metrics
+from workflow.ignite import handlers
+from workflow.ignite import metrics
 
 from .get_evaluator import get_evaluator
 from .get_trainer import get_trainer

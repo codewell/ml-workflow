@@ -1,14 +1,14 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
    name='ml-workflow',
-   version='0.1.0',
+   version='0.1.1',
    description='Workflow tools for pytorch and ignite',
    author='Felix Abrahamsson, Richard Löwenström, Jim Holmström',
    author_email='richard@aiwizo.com',
    keywords='pytorch ignite workflow utilities',
-   packages=['workflow'],
+   packages=find_packages(exclude=['venv', 'dist']),
    install_requires=[
         'torch>=1.3.1',
         'ignite>=0.3.0',
