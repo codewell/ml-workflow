@@ -1,5 +1,6 @@
 import torch
 import ignite
+from .handlers.attach_train_progress_bar import attach_train_progress_bar
 from workflow.torch import model_device, to_device
 
 
@@ -28,9 +29,17 @@ def get_trainer(model, criterion, optimizer, config, track_loss=True):
         return dict(loss=loss.item() * n_batches_per_step)
 
     trainer = ignite.engine.Engine(process_batch)
+    
     if track_loss:
         ignite.metrics.RunningAverage(
             output_transform=lambda x: x['loss'], alpha=0.98
         ).attach(trainer, 'running avg loss')
+
+    attach_train_progress_bar(trainer, config)
+
+    trainer.add_event_handler(
+        ignite.engine.Events.ITERATION_COMPLETED,
+        ignite.handlers.TerminateOnNan(),
+    )
 
     return trainer
