@@ -11,4 +11,4 @@ def to_device(x, device):
     elif type(x) == torch.Tensor:
         return x.to(device)
     else:
-        raise Exception(f'Unknown type {type(x)}, cannot move to device')
+        return x
