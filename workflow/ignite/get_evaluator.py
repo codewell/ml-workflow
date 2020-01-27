@@ -8,7 +8,7 @@ def get_evaluator(model):
 
     def process_batch(engine, batch):
         model.eval()
-        batch = to_device(batch, model)
+        batch = to_device(batch, device)
         with torch.no_grad():
             output = model(batch['features'])
 
