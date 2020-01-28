@@ -15,7 +15,6 @@
     )
 
 ## Development
-There can be differences with imports when installed with editable `-e` flag.
 
 ### Prepare and run tests
 
@@ -26,8 +25,9 @@ There can be differences with imports when installed with editable `-e` flag.
     pytest
 
 ### Use development version in project
-The following steps will create a link to the local directory and any changes 
-made to the package there will directly carry over to your project environment.
+The following steps will create a link to the local directory and any changes made to the package there will directly carry over to your project environment.
+
+_Packages installed with the editable flag `-e` can behave differently when it comes to imports._
 
     cd path/to/my/project
     source guild-env

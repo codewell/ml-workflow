@@ -23,6 +23,10 @@ def attach_output_handlers(
         Events.EPOCH_COMPLETED,
         early_stopping_handler
     )
+    trainer.add_event_handler(
+        Events.ITERATION_COMPLETED,
+        ignite.handlers.TerminateOnNan(),
+    )
     evaluator.add_event_handler(
         Events.EPOCH_COMPLETED,
         ignite.handlers.ModelCheckpoint(
@@ -36,6 +40,7 @@ def attach_output_handlers(
             optimizer=optimizer,
         ),
     )
+    attach_train_progress_bar(trainer, config)
     attach_validation_progress_bar(evaluator, validation_loader, config)
     attach_evaluation_logger(
         trainer, evaluator, validation_loader, early_stopping_handler
