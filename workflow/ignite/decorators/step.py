@@ -1,7 +1,9 @@
+from functools import wraps
 
 
 def step(optimizer, batches_per_step=1):
     def decorator(backward_fn):
+        @wraps(backward_fn)
         def batch_fn(engine, batch):
 
             result = backward_fn(engine, batch)

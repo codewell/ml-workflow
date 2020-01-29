@@ -1,4 +1,4 @@
-from functools import partial
+from functools import partial, wraps
 
 from workflow.functional import starcompose
 from workflow.torch import to_device as torch_to_device
