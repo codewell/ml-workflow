@@ -40,6 +40,6 @@ def split_new_data(df, key_column, split_fn, file_path):
         ]
 
     with open(file_path, 'w') as file:
-        json.dump(split, file)
+        json.dump(split, file, indent=4)
 
     return split
