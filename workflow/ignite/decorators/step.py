@@ -7,6 +7,11 @@ def step(optimizer, batches_per_step=1):
             result = backward_fn(engine, batch)
 
             if engine.state.iteration % batches_per_step == 0:
+                for param_group in optimizer.param_groups:
+                    for parameters in param_group['params']:
+                        if parameters.requires_grad:
+                            parameters.grad.div_(batches_per_step)
+
                 optimizer.step()
                 optimizer.zero_grad()
 
