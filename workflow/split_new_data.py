@@ -3,6 +3,20 @@ import json
 
 
 def split_new_data(df, key_column, split_fn, file_path):
+    '''
+    Usage:
+
+        split_fn = lambda df: sklearn.model_selection.train_test_split(
+            df,
+            stratify=df['source'],
+            test_size=config['test_size'],
+            random_state=config['seed'],
+        )
+        split_new_data(
+            voice_df, 'image_file_path', split_fn, config['voice_split_path']
+        )
+
+    '''
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             previous_split = json.load(file)
