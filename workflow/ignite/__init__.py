@@ -1,5 +1,4 @@
 from workflow.ignite import handlers
-from workflow.ignite import metrics
 from workflow.ignite import decorators
 
 from .is_float import is_float
