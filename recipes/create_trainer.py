@@ -1,7 +1,7 @@
 from workflow.ignite.decorators import train
 
 
-@train(model, optimizer, n_n_batches_per_step=2)
+@train(model, optimizer, n_batches_per_step=2)
 def train_batch(engine, batch):
     batch['predictions'] = model(batch['features'])
     loss_ = loss(batch)
