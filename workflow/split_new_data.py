@@ -2,7 +2,7 @@ import os
 import json
 
 
-def split_new_data(df, key_column, split_fn, file_path):
+def split_new_data(df, key_column, split_fn, filepath):
     '''
     Usage:
 
@@ -13,12 +13,12 @@ def split_new_data(df, key_column, split_fn, file_path):
             random_state=config['seed'],
         )
         split_new_data(
-            voice_df, 'image_file_path', split_fn, config['voice_split_path']
+            voice_df, 'image_filepath', split_fn, config['voice_split_path']
         )
 
     '''
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as file:
             previous_split = json.load(file)
 
         df = df[~df[key_column].isin(sum(previous_split, []))]
@@ -39,7 +39,7 @@ def split_new_data(df, key_column, split_fn, file_path):
             for df in split_dfs
         ]
 
-    with open(file_path, 'w') as file:
+    with open(filepath, 'w') as file:
         json.dump(split, file, indent=4)
 
     return split
