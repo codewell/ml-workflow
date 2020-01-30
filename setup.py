@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ml-workflow',
-    version='0.2.1',
+    version='0.2.2',
     description='Workflow tools for pytorch and ignite',
     author='Felix Abrahamsson, Richard Löwenström, Jim Holmström',
     author_email='richard@aiwizo.com',
