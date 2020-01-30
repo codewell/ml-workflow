@@ -6,14 +6,14 @@ from workflow.ignite.decorators import (
 )
 
 
-def train(model, optimizer, batches_per_step=1):
+def train(model, optimizer, n_batches_per_step=1):
     device = model_device(model)
 
     def decorator(process_batch):
 
         @wraps(process_batch)
         @to_device(device)
-        @step(optimizer, batches_per_step=batches_per_step)
+        @step(optimizer, n_batches_per_step=n_batches_per_step)
         def _process_batch(*args, **kwargs):
             model.train()
             return process_batch(*args, **kwargs)

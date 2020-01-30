@@ -14,7 +14,7 @@ def attach_train_progress_bar(
     ).attach(trainer, 'running_average_loss')
 
     epoch_progress_bar = tqdm(
-        total=config['batches_per_epoch'],
+        total=config['n_batches_per_epoch'],
         file=TQDM_OUTFILE,
         desc=f'''Epoch [0 / {config['max_epochs']}]'''
     )

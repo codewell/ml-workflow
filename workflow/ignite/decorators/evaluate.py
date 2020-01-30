@@ -1,16 +1,15 @@
 from functools import wraps
 
 from workflow.torch import model_device
-from workflow.ignite.decorators import (
-    to_device, no_grad
-)
+from workflow.ignite.decorators.to_device import to_device
+from workflow.ignite.decorators.no_grad import no_grad
 
 
 def evaluate(model):
     device = model_device(model)
 
     def decorator(process_batch):
-
+        
         @wraps(process_batch)
         @to_device(device)
         @no_grad
