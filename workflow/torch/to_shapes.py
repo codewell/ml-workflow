@@ -20,4 +20,4 @@ def to_shapes(*args):
     elif hasattr(x, 'shape'):
         return x.shape
     else:
-        raise Exception(f'Unknown type {type(x)}, cannot get shape')
+        raise x
