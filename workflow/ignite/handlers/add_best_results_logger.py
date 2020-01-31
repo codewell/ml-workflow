@@ -5,7 +5,7 @@ from ignite.engine import Events
 
 def add_best_results_logger(trainer, evaluator, score_function, prefix=''):
 
-    writer = SummaryWriter()
+    writer = SummaryWriter(log_dir='tb')
     best_results = dict(score=-np.inf)
 
     def update(engine):
