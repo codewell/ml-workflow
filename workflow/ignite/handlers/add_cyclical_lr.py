@@ -1,9 +1,9 @@
 from ignite.contrib.handlers.param_scheduler import LinearCyclicalScheduler
 from ignite.engine import Events
-from .attach_lr_warmup import attach_lr_warmup
+from .add_lr_warmup import add_lr_warmup
 
 
-def attach_cyclical_lr(trainer, optimizer, config):
+def add_cyclical_lr(trainer, optimizer, config):
 
     scheduler = LinearCyclicalScheduler(
         optimizer, 'lr',
@@ -15,6 +15,6 @@ def attach_cyclical_lr(trainer, optimizer, config):
     )
 
     if config['warmup_lr']:
-        attach_lr_warmup(trainer, config, scheduler)
+        add_lr_warmup(trainer, config, scheduler)
     else:
         trainer.add_event_handler(Events.ITERATION_STARTED, scheduler)

@@ -4,7 +4,7 @@ from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.write_engine_metrics import write_engine_metrics
 
 
-def attach_evaluation_logger(
+def add_evaluation_logger(
         trainer, evaluator, validation_loader, early_stopping_handler=None
     ):
 

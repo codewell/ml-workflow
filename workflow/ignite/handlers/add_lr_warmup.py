@@ -3,7 +3,7 @@ from ignite.contrib.handlers.param_scheduler import create_lr_scheduler_with_war
 from ignite.engine import Events
 
 
-def attach_lr_warmup(trainer, config, lr_scheduler):
+def add_lr_warmup(trainer, config, lr_scheduler):
 
     warmup_duration = (
         config['warmup_duration'] if config['warmup_duration'] > 0

@@ -1,15 +1,12 @@
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 from ignite.engine import Events
-from .loss_score_function import loss_score_function
 
 
-def attach_best_results_logger(trainer, evaluator, score_function=None, prefix=''):
+def add_best_results_logger(trainer, evaluator, score_function, prefix=''):
 
     writer = SummaryWriter()
     best_results = dict(score=-np.inf)
-    if score_function is None:
-        score_function = loss_score_function
 
     def update(engine):
         score = score_function(engine)
