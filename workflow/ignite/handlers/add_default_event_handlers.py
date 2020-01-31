@@ -26,6 +26,7 @@ def add_default_event_handlers(
             filename_prefix='model',
             score_function=score_function,
             n_saved=1,
+            require_empty=False,
         ),
         dict(
             model=model,
