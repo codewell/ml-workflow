@@ -32,7 +32,6 @@ def add_validation_progress_bar(evaluator, n_batches, config):
 
     @evaluator.on(Events.EPOCH_COMPLETED)
     @evaluator.on(Events.EXCEPTION_RAISED)
-    @evaluator.on(Events.COMPLETED)
     def release_progress_bar(engine, *args):
         validation_progress_bar.close()
         nonlocal epoch
