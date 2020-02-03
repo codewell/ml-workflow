@@ -1,9 +1,12 @@
 import numpy as np
 import ignite
 from ignite.engine import Events
+from functools import partial
+
 from .add_evaluation_logger import add_evaluation_logger
 from .add_best_results_logger import add_best_results_logger
-
+from workflow.ignite.write_engine_metrics import write_engine_metrics
+from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.constants import TQDM_OUTFILE
 
 
@@ -20,12 +23,27 @@ def add_default_event_handlers(
     ).attach(trainer)
 
     trainer.add_event_handler(
+        Events.EPOCH_STARTED,
+        lambda engine: tqdm_print(f'------ epoch: {engine.state.epoch} / {engine.state.max_epochs} ------')
+    )
+
+    trainer.add_event_handler(
+        Events.EPOCH_COMPLETED,
+        partial(write_engine_metrics, name='training')
+    )
+
+    trainer.add_event_handler(
         Events.EPOCH_COMPLETED, lambda engine: evaluator.run(validate_data_loader)
     )
 
     ignite.contrib.handlers.tqdm_logger.ProgressBar(
         desc='validating', bar_format=bar_format, file=TQDM_OUTFILE
     ).attach(evaluator)
+
+    evaluator.add_event_handler(
+        Events.EPOCH_COMPLETED,
+        partial(write_engine_metrics, name='validating')
+    )
 
     evaluator.add_event_handler(
         Events.EPOCH_COMPLETED,
