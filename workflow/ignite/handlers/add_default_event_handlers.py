@@ -3,80 +3,92 @@ import ignite
 from ignite.engine import Events
 from functools import partial
 
-from .add_evaluation_logger import add_evaluation_logger
 from .add_best_results_logger import add_best_results_logger
-from workflow.ignite.write_engine_metrics import write_engine_metrics
 from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.constants import TQDM_OUTFILE
+from .epoch_logger import EpochLogger
+from .metrics_logger import MetricsLogger
+from .progress_bar import ProgressBar
 
 
 def add_default_event_handlers(
-    model, optimizer, trainer, evaluator, validate_data_loader, score_function,
+    model, optimizer, trainer, evaluators, validate_data_loader, score_function,
     config
 ):
 
-    bar_format = '{desc} {percentage:3.0f}%|{bar}{postfix} {n}/{total} [{elapsed}<{remaining} {rate_fmt}]'
+    if type(evaluators) != list:
+        evaluators = [evaluators]
 
-    # Order of attaching progress bars is important
-    ignite.contrib.handlers.tqdm_logger.ProgressBar(
-        desc='training', bar_format=bar_format, file=TQDM_OUTFILE
-    ).attach(trainer)
-
-    trainer.add_event_handler(
-        Events.EPOCH_STARTED,
-        lambda engine: tqdm_print(f'------ epoch: {engine.state.epoch} / {engine.state.max_epochs} ------')
-    )
-
-    trainer.add_event_handler(
-        Events.EPOCH_COMPLETED,
-        partial(write_engine_metrics, name='training')
-    )
-
-    trainer.add_event_handler(
-        Events.EPOCH_COMPLETED, lambda engine: evaluator.run(validate_data_loader)
-    )
-
-    ignite.contrib.handlers.tqdm_logger.ProgressBar(
-        desc='validating', bar_format=bar_format, file=TQDM_OUTFILE
-    ).attach(evaluator)
-
-    evaluator.add_event_handler(
-        Events.EPOCH_COMPLETED,
-        partial(write_engine_metrics, name='validating')
-    )
-
-    evaluator.add_event_handler(
-        Events.EPOCH_COMPLETED,
-        ignite.handlers.ModelCheckpoint(
-            dirname='checkpoints',
-            filename_prefix='model',
-            score_function=score_function,
-            n_saved=1,
-            require_empty=False,
-        ),
-        dict(
-            model=model,
-            optimizer=optimizer,
-        ),
-    )
-
-    trainer.add_event_handler(
-        Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
-    )
-
-    early_stopping_handler = ignite.handlers.EarlyStopping(
-        patience=config['patience'],
-        score_function=score_function,
-        trainer=trainer,
-    )
-    evaluator.add_event_handler(
-        Events.COMPLETED, early_stopping_handler
-    )
-
-    # add_evaluation_logger(
-    #     trainer, evaluator, validate_data_loader, early_stopping_handler
+    # ignite.contrib.handlers.tensorboard_logger.TensorboardLogger(
+    #     log_dir='tb'
+    # ).attach(
+    #     trainer,
+    #     ignite.contrib.handlers.tensorboard_logger.OutputHandler(
+    #         tag='training',
+    #         output_transform=lambda output: dict(loss=output['loss']),
+    #     ),
+    #     Events.ITERATION_COMPLETED,
     # )
 
-    add_best_results_logger(
-        trainer, evaluator, score_function=score_function
+    EpochLogger().attach(trainer)
+
+    # Order of attaching progress bars is important
+    ProgressBar(desc='training').attach(
+        trainer,
+        output_transform=lambda output: dict(loss=output['loss']),
+        # ['running_loss'],
     )
+    MetricsLogger('training').attach(trainer)
+
+    for evaluator in evaluators:
+        trainer.add_event_handler(
+            Events.EPOCH_COMPLETED,
+            lambda engine: evaluator.run(validate_data_loader)
+        )
+
+        ProgressBar(desc='validating').attach(evaluator)
+        MetricsLogger('validating').attach(evaluator)
+
+    # evaluator.add_event_handler(
+    #     Events.EPOCH_COMPLETED,
+    #     ignite.handlers.ModelCheckpoint(
+    #         dirname='checkpoints',
+    #         filename_prefix='model',
+    #         score_function=score_function,
+    #         n_saved=1,
+    #         require_empty=False,
+    #     ),
+    #     dict(
+    #         model=model,
+    #         optimizer=optimizer,
+    #     ),
+    # )
+
+    # trainer.add_event_handler(
+    #     Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
+    # )
+
+    # extend early stopping to be verbose?
+
+    # early_stopping_handler = ignite.handlers.EarlyStopping(
+    #     patience=config['patience'],
+    #     score_function=score_function,
+    #     trainer=trainer,
+    # )
+    # evaluator.add_event_handler(
+    #     Events.COMPLETED, early_stopping_handler
+    # )
+
+    # @trainer.on(Events.EPOCH_COMPLETED)
+    # def print_early_stopping(engine):
+    #     epochs_until_stop = (
+    #         early_stopping_handler.patience - early_stopping_handler.counter
+    #     )
+    #     tqdm_print(
+    #         f'best score so far: {early_stopping_handler.best_score:.4f}'
+    #         f' (stopping in {epochs_until_stop} epochs)\n'
+    #     )
+
+    # add_best_results_logger(
+    #     trainer, evaluator, score_function=score_function
+    # )
