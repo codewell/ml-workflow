@@ -8,6 +8,7 @@ from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.constants import TQDM_OUTFILE
 from .epoch_logger import EpochLogger
 from .metrics_logger import MetricsLogger
+from .model_checkpoint import ModelCheckpoint
 from .progress_bar import ProgressBar
 
 
@@ -18,17 +19,6 @@ def add_default_event_handlers(
 
     if type(evaluators) != list:
         evaluators = [evaluators]
-
-    # ignite.contrib.handlers.tensorboard_logger.TensorboardLogger(
-    #     log_dir='tb'
-    # ).attach(
-    #     trainer,
-    #     ignite.contrib.handlers.tensorboard_logger.OutputHandler(
-    #         tag='training',
-    #         output_transform=lambda output: dict(loss=output['loss']),
-    #     ),
-    #     Events.ITERATION_COMPLETED,
-    # )
 
     EpochLogger().attach(trainer)
 
@@ -49,20 +39,21 @@ def add_default_event_handlers(
         ProgressBar(desc='validating').attach(evaluator)
         MetricsLogger('validating').attach(evaluator)
 
-    # evaluator.add_event_handler(
-    #     Events.EPOCH_COMPLETED,
-    #     ignite.handlers.ModelCheckpoint(
-    #         dirname='checkpoints',
-    #         filename_prefix='model',
-    #         score_function=score_function,
-    #         n_saved=1,
-    #         require_empty=False,
+    # ignite.contrib.handlers.tensorboard_logger.TensorboardLogger(
+    #     log_dir='tb'
+    # ).attach(
+    #     trainer,
+    #     ignite.contrib.handlers.tensorboard_logger.OutputHandler(
+    #         tag='training',
+    #         output_transform=lambda output: dict(loss=output['loss']),
     #     ),
-    #     dict(
-    #         model=model,
-    #         optimizer=optimizer,
-    #     ),
+    #     Events.ITERATION_COMPLETED,
     # )
+
+    ModelCheckpoint(score_function).attach(evaluator, dict(
+        model=model,
+        optimizer=optimizer,
+    ))
 
     # trainer.add_event_handler(
     #     Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),

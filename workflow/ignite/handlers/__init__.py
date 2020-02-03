@@ -4,5 +4,6 @@ from .add_exponential_decay_lr import add_exponential_decay_lr
 from .add_lr_warmup import add_lr_warmup
 from .add_default_event_handlers import add_default_event_handlers
 from .epoch_logger import EpochLogger
-from .progress_bar import ProgressBar
+from .model_checkpoint import ModelCheckpoint
 from .metrics_logger import MetricsLogger
+from .progress_bar import ProgressBar
