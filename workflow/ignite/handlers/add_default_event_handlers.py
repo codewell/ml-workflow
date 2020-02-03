@@ -1,23 +1,31 @@
 import numpy as np
 import ignite
 from ignite.engine import Events
-from .add_train_progress_bar import add_train_progress_bar
-from .add_validation_progress_bar import add_validation_progress_bar
 from .add_evaluation_logger import add_evaluation_logger
 from .add_best_results_logger import add_best_results_logger
 
-
-# def loss_score_function(engine):
-#     score = -engine.state.metrics['loss']
-#     return -np.inf if score == 0 else score
+from workflow.ignite.constants import TQDM_OUTFILE
 
 
 def add_default_event_handlers(
     model, optimizer, trainer, evaluator, validate_data_loader, score_function,
     config
 ):
-    add_train_progress_bar(trainer, config)
-    add_validation_progress_bar(evaluator, len(validate_data_loader), config)
+
+    bar_format = '{desc} {percentage:3.0f}%|{bar}{postfix} {n}/{total} [{elapsed}<{remaining} {rate_fmt}]'
+
+    # Order of attaching progress bars is important
+    ignite.contrib.handlers.tqdm_logger.ProgressBar(
+        desc='training', bar_format=bar_format, file=TQDM_OUTFILE
+    ).attach(trainer)
+
+    trainer.add_event_handler(
+        Events.EPOCH_COMPLETED, lambda engine: evaluator.run(validate_data_loader)
+    )
+
+    ignite.contrib.handlers.tqdm_logger.ProgressBar(
+        desc='validating', bar_format=bar_format, file=TQDM_OUTFILE
+    ).attach(evaluator)
 
     evaluator.add_event_handler(
         Events.EPOCH_COMPLETED,
@@ -47,9 +55,9 @@ def add_default_event_handlers(
         Events.COMPLETED, early_stopping_handler
     )
 
-    add_evaluation_logger(
-        trainer, evaluator, validate_data_loader, early_stopping_handler
-    )
+    # add_evaluation_logger(
+    #     trainer, evaluator, validate_data_loader, early_stopping_handler
+    # )
 
     add_best_results_logger(
         trainer, evaluator, score_function=score_function

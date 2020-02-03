@@ -10,8 +10,7 @@ def add_evaluation_logger(
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_evaluation_results(trainer):
-        evaluator.run(validation_loader)
-        tqdm_print(f'----- Evaluation - Epoch: {trainer.state.epoch} -----')
+        tqdm_print(f'----- Epoch: {trainer.state.epoch} -----')
         write_engine_metrics(trainer, name='Training')
         write_engine_metrics(evaluator, name='Validation')
         if early_stopping_handler is not None:
