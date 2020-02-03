@@ -12,4 +12,4 @@ class MapDataset(torch.utils.data.Dataset):
         return self.size
 
     def __getitem__(self, index):
-        return self.fn(self.dataframe, index)
+        return self.fn(self.dataframe.loc[index])
