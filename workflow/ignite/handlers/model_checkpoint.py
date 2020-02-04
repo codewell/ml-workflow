@@ -1,4 +1,5 @@
 import ignite
+from ignite.engine import Events
 
 
 class ModelCheckpoint:
@@ -11,8 +12,8 @@ class ModelCheckpoint:
             require_empty=False,
         )
 
-    def attach(self, engine, *args, *kwargs):
-        evaluator.add_event_handler(
+    def attach(self, engine, *args, **kwargs):
+        engine.add_event_handler(
             Events.EPOCH_COMPLETED,
             self.model_checkpoint,
             *args,

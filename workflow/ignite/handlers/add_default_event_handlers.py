@@ -6,6 +6,7 @@ from functools import partial
 from .add_best_results_logger import add_best_results_logger
 from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.constants import TQDM_OUTFILE
+from .early_stopping import EarlyStopping
 from .epoch_logger import EpochLogger
 from .metrics_logger import MetricsLogger
 from .model_checkpoint import ModelCheckpoint
@@ -55,30 +56,12 @@ def add_default_event_handlers(
         optimizer=optimizer,
     ))
 
-    # trainer.add_event_handler(
-    #     Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
-    # )
+    trainer.add_event_handler(
+        Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
+    )
 
-    # extend early stopping to be verbose?
+    EarlyStopping(score_function, trainer, config).attach(evaluator)
 
-    # early_stopping_handler = ignite.handlers.EarlyStopping(
-    #     patience=config['patience'],
-    #     score_function=score_function,
-    #     trainer=trainer,
-    # )
-    # evaluator.add_event_handler(
-    #     Events.COMPLETED, early_stopping_handler
-    # )
-
-    # @trainer.on(Events.EPOCH_COMPLETED)
-    # def print_early_stopping(engine):
-    #     epochs_until_stop = (
-    #         early_stopping_handler.patience - early_stopping_handler.counter
-    #     )
-    #     tqdm_print(
-    #         f'best score so far: {early_stopping_handler.best_score:.4f}'
-    #         f' (stopping in {epochs_until_stop} epochs)\n'
-    #     )
 
     # add_best_results_logger(
     #     trainer, evaluator, score_function=score_function
