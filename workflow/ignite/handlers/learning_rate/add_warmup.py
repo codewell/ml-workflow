@@ -1,9 +1,7 @@
-import ignite.contrib.handlers
 from ignite.contrib.handlers.param_scheduler import create_lr_scheduler_with_warmup
-from ignite.engine import Events
 
 
-def add_lr_warmup(trainer, config, lr_scheduler):
+def add_warmup(lr_scheduler, config):
 
     warmup_duration = (
         config['warmup_duration'] if config['warmup_duration'] > 0
@@ -15,11 +13,9 @@ def add_lr_warmup(trainer, config, lr_scheduler):
         else config['learning_rate']
     )
 
-    scheduler_with_warmup = create_lr_scheduler_with_warmup(
+    return create_lr_scheduler_with_warmup(
         lr_scheduler,
         config['warmup_start_value'],
         warmup_end_value,
         warmup_duration,
     )
-
-    trainer.add_event_handler(Events.ITERATION_STARTED, scheduler_with_warmup)
