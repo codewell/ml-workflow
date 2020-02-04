@@ -1,7 +1,7 @@
 import ignite
 from ignite.engine import Events
 from ignite.contrib.handlers.tensorboard_logger import (
-    TensorboardLogger, OutputHandler, global_step_from_engine
+    TensorboardLogger, OutputHandler, OptimizerParamsHandler, global_step_from_engine
 )
 
 from workflow.ignite.tqdm_print import tqdm_print
@@ -33,6 +33,7 @@ def create_standard_trainer_validator(
     for name, metric in validator_metrics.items():
         metric.attach(validator, name)
 
+    tensorboard_logger = TensorboardLogger(log_dir='tb')
 
     EpochLogger().attach(trainer)
 
@@ -42,7 +43,7 @@ def create_standard_trainer_validator(
         trainer, 'all'
     )
     MetricsLogger(training_desc).attach(trainer)
-    TensorboardLogger(log_dir='tb').attach(
+    tensorboard_logger.attach(
         trainer,
         OutputHandler(
             tag=training_desc,
@@ -53,13 +54,13 @@ def create_standard_trainer_validator(
 
     trainer.add_event_handler(
         Events.EPOCH_COMPLETED,
-        lambda engine: validator.run(validate_data_loader)
+        lambda engine: validator.run(validate_data_loader),
     )
 
     validator_desc = 'validate'
     ProgressBar(desc=validator_desc).attach(validator)
     MetricsLogger(validator_desc).attach(validator)
-    TensorboardLogger(log_dir='tb').attach(
+    tensorboard_logger.attach(
         validator,
         OutputHandler(
             tag=validator_desc,
@@ -67,6 +68,16 @@ def create_standard_trainer_validator(
             global_step_transform=global_step_from_engine(trainer),
         ),
         Events.EPOCH_COMPLETED,
+    )
+
+    tensorboard_logger.attach(
+        trainer,
+        log_handler=OptimizerParamsHandler(
+            tag=training_desc,
+            param_name='lr',
+            optimizer=optimizer,
+        ),
+        event_name=Events.ITERATION_STARTED,
     )
 
     ModelCheckpoint(model_score_function).attach(

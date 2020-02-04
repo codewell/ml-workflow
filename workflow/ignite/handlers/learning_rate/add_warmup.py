@@ -5,7 +5,7 @@ def add_warmup(lr_scheduler, config):
 
     warmup_duration = (
         config['warmup_duration'] if config['warmup_duration'] > 0
-        else config['steps_per_epoch'] * -config['warmup_duration']
+        else config['n_batches_per_epoch'] * -config['warmup_duration']
     )
 
     warmup_end_value = (

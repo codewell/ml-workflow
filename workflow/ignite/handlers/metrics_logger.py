@@ -15,7 +15,7 @@ class MetricsLogger:
         if len(engine.state.metrics) >= 1:
             tqdm_print(f'{self.name}:')
 
-            target_len = 16
+            target_len = 18
             for metric, value in engine.state.metrics.items():
                 padding = ' ' * (target_len - len(metric))
                 if hasattr(value, '__len__'):
