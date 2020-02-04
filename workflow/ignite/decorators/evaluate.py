@@ -1,8 +1,8 @@
+from torch import no_grad
 from functools import wraps
 
 from workflow.torch import model_device
 from workflow.ignite.decorators.to_device import to_device
-from workflow.ignite.decorators.no_grad import no_grad
 
 
 def evaluate(model):
@@ -12,7 +12,7 @@ def evaluate(model):
         
         @wraps(process_batch)
         @to_device(device)
-        @no_grad
+        @no_grad()
         def _process_batch(*args, **kwargs):
             model.eval()
             return process_batch(*args, **kwargs)
