@@ -5,24 +5,27 @@ from ignite.contrib.handlers.tensorboard_logger import (
 )
 
 from workflow.ignite.tqdm_print import tqdm_print
-from .early_stopping import EarlyStopping
-from .epoch_logger import EpochLogger
-from .metrics_logger import MetricsLogger
-from .model_checkpoint import ModelCheckpoint
-from .progress_bar import ProgressBar
+from workflow.ignite.handlers.early_stopping import EarlyStopping
+from workflow.ignite.handlers.epoch_logger import EpochLogger
+from workflow.ignite.handlers.metrics_logger import MetricsLogger
+from workflow.ignite.handlers.model_checkpoint import ModelCheckpoint
+from workflow.ignite.handlers.progress_bar import ProgressBar
 
 
-def add_default_event_handlers(
+def create_standard_trainer_validator(
     model,
     optimizer,
-    trainer,
-    validator,
+    train_batch,
+    evaluate_batch,
     validate_data_loader,
     model_score_function,
     trainer_metrics,
     validator_metrics,
     config,
 ):
+
+    trainer = ignite.engine.Engine(train_batch)
+    validator = ignite.engine.Engine(evaluate_batch)
 
     for name, metric in trainer_metrics.items():
         metric.attach(trainer, name)
@@ -79,3 +82,5 @@ def add_default_event_handlers(
     )
 
     EarlyStopping(model_score_function, trainer, config).attach(validator)
+
+    return trainer, validator
