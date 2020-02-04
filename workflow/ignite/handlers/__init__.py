@@ -1,4 +1,3 @@
-from .add_best_results_logger import add_best_results_logger
 from .add_cyclical_lr import add_cyclical_lr
 from .add_exponential_decay_lr import add_exponential_decay_lr
 from .add_lr_warmup import add_lr_warmup

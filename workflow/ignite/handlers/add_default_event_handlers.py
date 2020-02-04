@@ -2,8 +2,10 @@ import numpy as np
 import ignite
 from ignite.engine import Events
 from functools import partial
+from ignite.contrib.handlers.tensorboard_logger import (
+    TensorboardLogger, OutputHandler, global_step_from_engine
+)
 
-from .add_best_results_logger import add_best_results_logger
 from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.constants import TQDM_OUTFILE
 from .early_stopping import EarlyStopping
@@ -14,8 +16,8 @@ from .progress_bar import ProgressBar
 
 
 def add_default_event_handlers(
-    model, optimizer, trainer, evaluators, validate_data_loader, score_function,
-    config
+    model, optimizer, trainer, evaluators, validate_data_loader,
+    model_score_function, tensorboard_metric_names, config
 ):
 
     if type(evaluators) != dict:
@@ -23,7 +25,7 @@ def add_default_event_handlers(
 
     EpochLogger().attach(trainer)
 
-    # Order of attaching progress bars is important
+    # Order of attaching progress bars is important for vscode / atom
     ProgressBar(desc='training').attach(
         trainer,
         output_transform=lambda output: dict(loss=output['loss']),
@@ -40,18 +42,7 @@ def add_default_event_handlers(
         ProgressBar(desc=evaluator_desc).attach(evaluator)
         MetricsLogger(evaluator_desc).attach(evaluator)
 
-    # ignite.contrib.handlers.tensorboard_logger.TensorboardLogger(
-    #     log_dir='tb'
-    # ).attach(
-    #     trainer,
-    #     ignite.contrib.handlers.tensorboard_logger.OutputHandler(
-    #         tag='training',
-    #         output_transform=lambda output: dict(loss=output['loss']),
-    #     ),
-    #     Events.ITERATION_COMPLETED,
-    # )
-
-    ModelCheckpoint(score_function).attach(evaluator, dict(
+    ModelCheckpoint(model_score_function).attach(evaluator, dict(
         model=model,
         optimizer=optimizer,
     ))
@@ -60,9 +51,24 @@ def add_default_event_handlers(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
     )
 
-    EarlyStopping(score_function, trainer, config).attach(evaluator)
+    TensorboardLogger(log_dir='tb').attach(
+        trainer,
+        OutputHandler(
+            tag='training',
+            output_transform=lambda output: dict(loss=output['loss']),
+        ),
+        Events.ITERATION_COMPLETED,
+    )
 
+    for evaluator_desc, evaluator in evaluators.items():
+        TensorboardLogger(log_dir='tb').attach(
+            evaluator,
+            OutputHandler(
+                tag=evaluator_desc,
+                metric_names=tensorboard_metric_names,
+                global_step_transform=global_step_from_engine(trainer),
+            ),
+            Events.EPOCH_COMPLETED,
+        )
 
-    # add_best_results_logger(
-    #     trainer, evaluator, score_function=score_function
-    # )
+    EarlyStopping(model_score_function, trainer, config).attach(evaluator)

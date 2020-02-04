@@ -5,10 +5,10 @@ from workflow.ignite.tqdm_print import tqdm_print
 
 
 class EarlyStopping:
-    def __init__(self, score_function, trainer, config):
+    def __init__(self, model_score_function, trainer, config):
         self.early_stopping_handler = ignite.handlers.EarlyStopping(
         patience=config['patience'],
-        score_function=score_function,
+        score_function=model_score_function,
         trainer=trainer,
     )
 
