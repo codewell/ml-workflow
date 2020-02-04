@@ -1,20 +1,29 @@
 import os
 import torch
+import numpy as np
 
 
-def load_best_model(checkpoint_dir, model, optimizer=None, epoch=None):
+def load_best_model(
+    checkpoint_dir,
+    model,
+    optimizer=None,
+    prefix='model_',
+    suffix=None
+):
     models = os.listdir(checkpoint_dir)
-    if epoch is None:
-        epoch = max([
-            int(name.split('.')[0].split('_')[-1])
+    if suffix is None:
+        suffixes = [
+            '_'.join(os.path.splitext(name)[0].lstrip(prefix).split('_')[1:])
             for name in models
-        ])
-    model.load_state_dict(torch.load(
-        f'{checkpoint_dir}/model_weights_{epoch}.pth',
+        ]
+        suffix = suffixes[np.argmax([float(s.split('_')[-1]) for s in suffixes])]
+
+    state = torch.load(
+        f'{checkpoint_dir}/{prefix}checkpoint_{suffix}.pth',
         map_location=next(model.parameters()).device
-    ))
+    )
+
+    model.load_state_dict(state['model'])
     if optimizer is not None:
-        optimizer.load_state_dict(torch.load(
-            f'{checkpoint_dir}/model_optimizer_{epoch}.pth',
-        ))
-    return epoch
+        optimizer.load_state_dict(state['optimizer'])
+    return suffix
