@@ -19,23 +19,31 @@ def add_default_event_handlers(
     validator,
     validate_data_loader,
     model_score_function,
-    trainer_metric_names,
-    validator_metric_names,
+    trainer_metrics,
+    validator_metrics,
     config,
 ):
+
+    for name, metric in trainer_metrics.items():
+        metric.attach(trainer, name)
+
+    for name, metric in validator_metrics.items():
+        metric.attach(validator, name)
+
 
     EpochLogger().attach(trainer)
 
     # Order of attaching progress bars is important for vscode / atom
-    ProgressBar(desc='training').attach(
-        trainer, trainer_metric_names
+    training_desc = 'train'
+    ProgressBar(desc=training_desc).attach(
+        trainer, 'all'
     )
-    MetricsLogger('training').attach(trainer)
+    MetricsLogger(training_desc).attach(trainer)
     TensorboardLogger(log_dir='tb').attach(
         trainer,
         OutputHandler(
-            tag='training',
-            metric_names=trainer_metric_names,
+            tag=training_desc,
+            metric_names='all',
         ),
         Events.ITERATION_COMPLETED,
     )
@@ -45,23 +53,26 @@ def add_default_event_handlers(
         lambda engine: validator.run(validate_data_loader)
     )
 
-    validator_desc = 'validating'
+    validator_desc = 'validate'
     ProgressBar(desc=validator_desc).attach(validator)
     MetricsLogger(validator_desc).attach(validator)
     TensorboardLogger(log_dir='tb').attach(
         validator,
         OutputHandler(
             tag=validator_desc,
-            metric_names=validator_metric_names,
+            metric_names='all',
             global_step_transform=global_step_from_engine(trainer),
         ),
         Events.EPOCH_COMPLETED,
     )
 
-    ModelCheckpoint(model_score_function).attach(validator, dict(
-        model=model,
-        optimizer=optimizer,
-    ))
+    ModelCheckpoint(model_score_function).attach(
+        validator,
+        dict(
+            model=model,
+            optimizer=optimizer,
+        )
+    )
 
     trainer.add_event_handler(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
