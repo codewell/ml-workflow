@@ -7,7 +7,11 @@ from torch.optim.lr_scheduler import StepLR
 def add_exponential_decay_lr(trainer, optimizer, config):
 
     scheduler = LRScheduler(
-        StepLR(optimizer, config['steps_per_epoch'], gamma=config['lr_decay'])
+        StepLR(
+            optimizer,
+            config['n_batches_per_epoch'],
+            gamma=config['lr_decay']
+        )
     )
     if config['warmup_lr']:
         add_lr_warmup(trainer, config, scheduler)
