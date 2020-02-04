@@ -18,8 +18,8 @@ def add_default_event_handlers(
     config
 ):
 
-    if type(evaluators) != list:
-        evaluators = [evaluators]
+    if type(evaluators) != dict:
+        evaluators = dict(validating=evaluators)
 
     EpochLogger().attach(trainer)
 
@@ -31,14 +31,14 @@ def add_default_event_handlers(
     )
     MetricsLogger('training').attach(trainer)
 
-    for evaluator in evaluators:
+    for evaluator_desc, evaluator in evaluators.items():
         trainer.add_event_handler(
             Events.EPOCH_COMPLETED,
             lambda engine: evaluator.run(validate_data_loader)
         )
 
-        ProgressBar(desc='validating').attach(evaluator)
-        MetricsLogger('validating').attach(evaluator)
+        ProgressBar(desc=evaluator_desc).attach(evaluator)
+        MetricsLogger(evaluator_desc).attach(evaluator)
 
     # ignite.contrib.handlers.tensorboard_logger.TensorboardLogger(
     #     log_dir='tb'
