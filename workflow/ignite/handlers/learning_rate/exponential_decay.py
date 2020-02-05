@@ -7,7 +7,7 @@ class ExponentialDecay(LRScheduler):
         super().__init__(
             StepLR(
                 optimizer,
-                config['steps_per_epoch'],
+                config['n_batches_per_epoch'],
                 gamma=config['lr_decay']
             )
         )
