@@ -14,11 +14,11 @@ class EarlyStopping:
 
     def attach(self, engine):
         engine.add_event_handler(
-            Events.COMPLETED, self.early_stopping_handler
+            Events.EPOCH_COMPLETED, self.early_stopping_handler
         )
 
         engine.add_event_handler(
-            Events.COMPLETED,
+            Events.EPOCH_COMPLETED,
             self._print_status,
         )
 

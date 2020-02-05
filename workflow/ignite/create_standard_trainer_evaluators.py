@@ -12,26 +12,45 @@ from workflow.ignite.handlers.model_checkpoint import ModelCheckpoint
 from workflow.ignite.handlers.progress_bar import ProgressBar
 
 
-def create_standard_trainer_validator(
+def create_standard_trainer_evaluators(
     model,
     optimizer,
     train_batch,
     evaluate_batch,
-    validate_data_loader,
+    evaluate_data_loaders,
     model_score_function,
     trainer_metrics,
-    validator_metrics,
+    create_evaluator_metrics,
     config,
 ):
 
     trainer = ignite.engine.Engine(train_batch)
-    validator = ignite.engine.Engine(evaluate_batch)
 
     for name, metric in trainer_metrics.items():
         metric.attach(trainer, name)
 
-    for name, metric in validator_metrics.items():
-        metric.attach(validator, name)
+
+    if type(evaluate_data_loaders) != dict:
+        evaluate_data_loaders = dict(validate=evaluate_data_loaders)
+        evaluators = dict(validate=ignite.engine.Engine(evaluate_batch))
+
+        _model_score_function = lambda trainer: (
+            model_score_function(evaluators['validate'])
+        )
+    else:
+        evaluators = {
+            evaluator_name: ignite.engine.Engine(evaluate_batch)
+            for evaluator_name in evaluate_data_loaders.keys()
+        }
+
+        _model_score_function = lambda trainer: (
+            model_score_function(evaluators)
+        )
+
+    for evaluator in evaluators.values():
+        for metric_name, metric in create_evaluator_metrics().items():
+            metric.attach(evaluator, metric_name)
+
 
     tensorboard_logger = TensorboardLogger(log_dir='tb')
 
@@ -52,23 +71,30 @@ def create_standard_trainer_validator(
         Events.ITERATION_COMPLETED,
     )
 
-    trainer.add_event_handler(
-        Events.EPOCH_COMPLETED,
-        lambda engine: validator.run(validate_data_loader),
-    )
 
-    validator_desc = 'validate'
-    ProgressBar(desc=validator_desc).attach(validator)
-    MetricsLogger(validator_desc).attach(validator)
-    tensorboard_logger.attach(
-        validator,
-        OutputHandler(
-            tag=validator_desc,
-            metric_names='all',
-            global_step_transform=global_step_from_engine(trainer),
-        ),
-        Events.EPOCH_COMPLETED,
-    )
+    def run_evaluator(evaluator_desc):
+        return lambda engine: evaluators[evaluator_desc].run(
+            evaluate_data_loaders[evaluator_desc]
+        )
+
+
+    for evaluator_desc, evaluator in evaluators.items():
+
+        trainer.add_event_handler(
+            Events.EPOCH_COMPLETED, run_evaluator(evaluator_desc),
+        )
+
+        ProgressBar(desc=evaluator_desc).attach(evaluator)
+        MetricsLogger(evaluator_desc).attach(evaluator)
+        tensorboard_logger.attach(
+            evaluator,
+            OutputHandler(
+                tag=evaluator_desc,
+                metric_names='all',
+                global_step_transform=global_step_from_engine(trainer),
+            ),
+            Events.EPOCH_COMPLETED,
+        )
 
     tensorboard_logger.attach(
         trainer,
@@ -84,10 +110,6 @@ def create_standard_trainer_validator(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
     )
 
-    _model_score_function = lambda trainer: (
-        model_score_function(validator)
-    )
-
     ModelCheckpoint(_model_score_function).attach(
         trainer,
         dict(
@@ -98,4 +120,4 @@ def create_standard_trainer_validator(
 
     EarlyStopping(_model_score_function, trainer, config).attach(trainer)
 
-    return trainer, validator
+    return trainer, evaluators
