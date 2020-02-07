@@ -77,7 +77,7 @@ def create_standard_trainer_validator(
             param_name='lr',
             optimizer=optimizer,
         ),
-        event_name=Events.ITERATION_STARTED,
+        event_name=Events.ITERATION_COMPLETED,
     )
 
     trainer.add_event_handler(
