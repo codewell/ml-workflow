@@ -4,7 +4,6 @@ from ignite.contrib.handlers.tensorboard_logger import (
     TensorboardLogger, OutputHandler, OptimizerParamsHandler, global_step_from_engine
 )
 
-from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.handlers.early_stopping import EarlyStopping
 from workflow.ignite.handlers.epoch_logger import EpochLogger
 from workflow.ignite.handlers.metrics_logger import MetricsLogger

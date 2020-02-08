@@ -1,6 +1,6 @@
+from tqdm import tqdm
 from ignite.engine import Events
 
-from workflow.ignite.tqdm_print import tqdm_print
 from workflow.ignite.is_float import is_float
 
 
@@ -13,15 +13,15 @@ class MetricsLogger:
 
     def _print(self, engine):
         if len(engine.state.metrics) >= 1:
-            tqdm_print(f'{self.name}:')
+            tqdm.write(f'{self.name}:')
 
             target_len = 18
             for metric, value in engine.state.metrics.items():
                 padding = ' ' * (target_len - len(metric))
                 if hasattr(value, '__len__'):
-                    tqdm_print(f'  {metric}:')
-                    tqdm_print(str(value))
+                    tqdm.write(f'  {metric}:')
+                    tqdm.write(str(value))
                 elif is_float(value):
-                    tqdm_print(f'  {metric}:{padding} {value:.4f}')
+                    tqdm.write(f'  {metric}:{padding} {value:.4f}')
                 else:
-                    tqdm_print(f'  {metric}:{padding} {value}')
+                    tqdm.write(f'  {metric}:{padding} {value}')
