@@ -1,14 +1,11 @@
-from ignite.contrib.handlers.param_scheduler import LinearCyclicalScheduler
 
 
-class Cyclical(LinearCyclicalScheduler):
-    def __init__(self, optimizer, config):
-        super().__init__(
-            optimizer,
-            param_name='lr',
-            start_value=config['learning_rate'] / 100,
-            end_value=config['learning_rate'],
-            cycle_size=config['n_batches_per_epoch'],
-            start_value_mult=config['lr_decay'],
-            end_value_mult=config['lr_decay'],
+def cyclical(length=100, relative_min=0.1):
+    def _cyclical(step, learning_rate):
+        return (
+            step,
+            learning_rate * (
+                1 - (step % length) / length
+            ) * (1- relative_min) + relative_min
         )
+    return _cyclical

@@ -1,3 +1,4 @@
-from .add_warmup import add_warmup
-from .cyclical import Cyclical
-from .exponential_decay import ExponentialDecay
+from .cyclical import cyclical
+from .decay import decay
+from .learning_rate_scheduler import LearningRateScheduler
+from .warmup import warmup
