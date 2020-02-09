@@ -19,7 +19,7 @@ def create_standard_trainer_evaluators(
     evaluate_data_loaders,
     model_score_function,
     trainer_metrics,
-    create_evaluator_metrics,
+    evaluator_metrics,
     config,
 ):
 
@@ -28,28 +28,14 @@ def create_standard_trainer_evaluators(
     for name, metric in trainer_metrics.items():
         metric.attach(trainer, name)
 
+    evaluators = {
+        evaluator_name: ignite.engine.Engine(evaluate_batch)
+        for evaluator_name in evaluate_data_loaders.keys()
+    }
 
-    if type(evaluate_data_loaders) != dict:
-        evaluate_data_loaders = dict(validate=evaluate_data_loaders)
-        evaluators = dict(validate=ignite.engine.Engine(evaluate_batch))
-
-        _model_score_function = lambda trainer: (
-            model_score_function(evaluators['validate'])
-        )
-    else:
-        evaluators = {
-            evaluator_name: ignite.engine.Engine(evaluate_batch)
-            for evaluator_name in evaluate_data_loaders.keys()
-        }
-
-        _model_score_function = lambda trainer: (
-            model_score_function(evaluators)
-        )
-
-    for evaluator in evaluators.values():
-        for metric_name, metric in create_evaluator_metrics().items():
+    for evaluator_name, evaluator in evaluators.items():
+        for metric_name, metric in evaluator_metrics[evaluator_name].items():
             metric.attach(evaluator, metric_name)
-
 
     tensorboard_logger = TensorboardLogger(log_dir='tb')
 
@@ -107,6 +93,11 @@ def create_standard_trainer_evaluators(
 
     trainer.add_event_handler(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
+    )
+
+
+    _model_score_function = lambda trainer: (
+        model_score_function(evaluators)
     )
 
     ModelCheckpoint(_model_score_function).attach(

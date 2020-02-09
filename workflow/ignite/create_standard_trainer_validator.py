@@ -21,9 +21,9 @@ def create_standard_trainer_validator(
         train_batch,
         evaluate_batch,
         evaluate_data_loaders=dict(validate=validate_data_loader),
-        model_score_function=model_score_function,
+        model_score_function=lambda evaluators: model_score_function(evaluators['validate']),
         trainer_metrics=trainer_metrics,
-        create_evaluator_metrics=lambda: validator_metrics,
+        evaluator_metrics=dict(validate=validator_metrics),
         config=config,
     )
 
