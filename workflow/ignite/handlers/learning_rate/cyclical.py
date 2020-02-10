@@ -1,11 +1,11 @@
 
 
 def cyclical(length=100, relative_min=0.1):
-    def _cyclical(step, learning_rate):
+    def _cyclical(step, multiplier):
         return (
             step,
-            learning_rate * (
-                1 - (step % length) / length
-            ) * (1- relative_min) + relative_min
+            multiplier * (
+                1 - (1 - relative_min) * ((step - 1) % length) / (length - 1)
+            )
         )
     return _cyclical

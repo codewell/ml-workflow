@@ -1,9 +1,9 @@
 
 
 def decay(base):
-    def _decay(step, learning_rate):
+    def _decay(step, multiplier):
         return (
             step,
-            learning_rate * base ** step
+            multiplier * base ** (step - 1)
         )
     return _decay
