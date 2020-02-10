@@ -4,13 +4,11 @@ from ignite.contrib.handlers.tensorboard_logger import (
     TensorboardLogger, OutputHandler, OptimizerParamsHandler, global_step_from_engine
 )
 from workflow.ignite.metrics import ReduceMetricsLambda
-from workflow.ignite.handlers import (
-    EarlyStopping,
-    EpochLogger,
-    MetricsLogger,
-    ModelCheckpoint,
-    ProgressBar,
-)
+from workflow.ignite.handlers.early_stopping import EarlyStopping
+from workflow.ignite.handlers.epoch_logger import EpochLogger
+from workflow.ignite.handlers.metrics_logger import MetricsLogger
+from workflow.ignite.handlers.model_checkpoint import ModelCheckpoint
+from workflow.ignite.handlers.progress_bar import ProgressBar
 
 
 def create_standard_trainer_evaluators(
@@ -43,24 +41,19 @@ def create_standard_trainer_evaluators(
 
     EpochLogger().attach(trainer)
 
-    progress_bar_metric_names = [
-        name for name, metric in trainer_metrics.items()
-        if trainer.has_event_handler(
-            metric.iteration_completed, Events.ITERATION_COMPLETED
-        )
-    ]
-
     # Order of attaching progress bars is important for vscode / atom
     training_desc = 'train'
+    train_metric_names = list(trainer_metrics.keys())
     ProgressBar(desc=training_desc).attach(
-        trainer, progress_bar_metric_names
+        trainer, metric_names=train_metric_names
     )
-    MetricsLogger(training_desc).attach(trainer)
+    MetricsLogger(training_desc).attach(trainer, train_metric_names)
+
     tensorboard_logger.attach(
         trainer,
         OutputHandler(
             tag=training_desc,
-            metric_names='all',
+            metric_names=train_metric_names,
         ),
         Events.ITERATION_COMPLETED,
     )
@@ -73,18 +66,19 @@ def create_standard_trainer_evaluators(
 
 
     for evaluator_desc, evaluator in evaluators.items():
+        evaluator_metric_names = list(evaluator_metrics[evaluator_desc].keys())
 
         trainer.add_event_handler(
             Events.EPOCH_COMPLETED, run_evaluator(evaluator_desc),
         )
 
         ProgressBar(desc=evaluator_desc).attach(evaluator)
-        MetricsLogger(evaluator_desc).attach(evaluator)
+        MetricsLogger(evaluator_desc).attach(evaluator, evaluator_metric_names)
         tensorboard_logger.attach(
             evaluator,
             OutputHandler(
                 tag=evaluator_desc,
-                metric_names='all',
+                metric_names=evaluator_metric_names,
                 global_step_transform=global_step_from_engine(trainer),
             ),
             Events.EPOCH_COMPLETED,
@@ -104,17 +98,25 @@ def create_standard_trainer_evaluators(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
     )
 
-    # ignite.metrics.MetricsLambda(
-    #     lambda: model_score_function(evaluators)
-    # ).attach(trainer, 'model_score')
+    ignite.metrics.MetricsLambda(
+        lambda: model_score_function(evaluators)
+    ).attach(trainer, 'model_score')
 
-    # ReduceMetricsLambda(
-    #     max, lambda: model_score_function(evaluators)
-    # ).attach(trainer, 'best_model_score')
+    ReduceMetricsLambda(
+        max, lambda: model_score_function(evaluators)
+    ).attach(trainer, 'best_model_score')
 
-    _model_score_function = lambda trainer: (
-        model_score_function(evaluators)
+    tensorboard_logger.attach(
+        trainer,
+        OutputHandler(
+            tag=training_desc,
+            metric_names=['model_score', 'best_model_score'],
+        ),
+        Events.EPOCH_COMPLETED,
     )
+
+    def _model_score_function(trainer):
+        return model_score_function(evaluators)
 
     ModelCheckpoint(_model_score_function).attach(
         trainer,
