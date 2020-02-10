@@ -95,10 +95,13 @@ def create_standard_trainer_evaluators(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
     )
 
-
     _model_score_function = lambda trainer: (
         model_score_function(evaluators)
     )
+
+    ignite.metrics.MetricsLambda(
+        lambda: model_score_function(evaluators)
+    ).attach(trainer, 'model_score')
 
     ModelCheckpoint(_model_score_function).attach(
         trainer,
