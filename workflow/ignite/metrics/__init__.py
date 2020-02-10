@@ -1,1 +1,2 @@
 from .matthews_correlation_coefficient import MatthewsCorrelationCoefficient
+from .reduce_metrics_lambda import ReduceMetricsLambda
