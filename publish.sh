@@ -36,8 +36,6 @@ publish () {
     git tag -l | sed '/^'"${VERSION_TAG}"'$/{q2}' > /dev/null \
         || (echo "${VERSION_TAG} already exists"; exit 4)
 
-    sed -i -E 's/^(\s*)version(\s*)=(\s*)\x27.*\x27,$/\1version\2=\3\x27'"${VERSION}"'\x27,/g' setup.py
-
     pytest
 
     git diff origin/master
