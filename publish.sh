@@ -43,8 +43,6 @@ publish () {
     read -r -p "Deploying ${VERSION_TAG}, are you sure? [y/N]? " response
     case "$response" in
         [yY][eE][sS]|[yY])
-            git add setup.py
-            git commit -m"Version ${VERSION_TAG}"
             git tag "${VERSION_TAG}"
             git push origin "${VERSION_TAG}"
             git push origin master
