@@ -9,6 +9,8 @@ from workflow.ignite.handlers.epoch_logger import EpochLogger
 from workflow.ignite.handlers.metrics_logger import MetricsLogger
 from workflow.ignite.handlers.model_checkpoint import ModelCheckpoint
 from workflow.ignite.handlers.progress_bar import ProgressBar
+from workflow.ignite.handlers.best_model_tracker import BestModelTracker
+from workflow.ignite.custom_events import CustomEvents
 
 
 def create_standard_trainer_evaluators(
@@ -65,6 +67,10 @@ def create_standard_trainer_evaluators(
         )
 
 
+    def _model_score_function(trainer):
+        return model_score_function(evaluators)
+
+
     for evaluator_desc, evaluator in evaluators.items():
         evaluator_metric_names = list(evaluator_metrics[evaluator_desc].keys())
 
@@ -82,6 +88,21 @@ def create_standard_trainer_evaluators(
                 global_step_transform=global_step_from_engine(trainer),
             ),
             Events.EPOCH_COMPLETED,
+        )
+
+        evaluator.register_events(
+            CustomEvents.NEW_BEST_MODEL,
+            event_to_attr={CustomEvents.NEW_BEST_MODEL: 'new_best_model'}
+        )
+        BestModelTracker().attach(evaluator, _model_score_function)
+        tensorboard_logger.attach(
+            evaluator,
+            OutputHandler(
+                tag=f'best/{evaluator_desc}',
+                metric_names=evaluator_metric_names,
+                global_step_transform=global_step_from_engine(trainer),
+            ),
+            CustomEvents.NEW_BEST_MODEL,
         )
 
     tensorboard_logger.attach(
@@ -114,9 +135,6 @@ def create_standard_trainer_evaluators(
         ),
         Events.EPOCH_COMPLETED,
     )
-
-    def _model_score_function(trainer):
-        return model_score_function(evaluators)
 
     ModelCheckpoint(_model_score_function).attach(
         trainer,
