@@ -10,7 +10,6 @@ from workflow.ignite.handlers.metrics_logger import MetricsLogger
 from workflow.ignite.handlers.model_checkpoint import ModelCheckpoint
 from workflow.ignite.handlers.progress_bar import ProgressBar
 from workflow.ignite.handlers.best_model_trigger import BestModelTrigger
-from workflow.ignite.custom_events import CustomEvents
 
 
 def create_standard_trainer_evaluators(
@@ -86,18 +85,35 @@ def create_standard_trainer_evaluators(
             Events.EPOCH_COMPLETED,
         )
 
-        evaluator.register_events(
-            CustomEvents.NEW_BEST_MODEL,
-            event_to_attr={CustomEvents.NEW_BEST_MODEL: 'new_best_model'}
-        )
+    ignite.metrics.MetricsLambda(
+        lambda: model_score_function(evaluators)
+    ).attach(trainer, 'model_score')
+
+    ReduceMetricsLambda(
+        max, lambda: model_score_function(evaluators)
+    ).attach(trainer, 'best_model_score')
+
+    tensorboard_logger.attach(
+        trainer,
+        OutputHandler(
+            tag=training_desc,
+            metric_names=['model_score', 'best_model_score'],
+        ),
+        Events.EPOCH_COMPLETED,
+    )
+
+    BestModelTrigger('model_score', evaluators.values()).attach(trainer)
+
+    for evaluator_desc, evaluator in evaluators.items():
+        evaluator_metric_names = list(evaluator_metrics[evaluator_desc].keys())
         tensorboard_logger.attach(
             evaluator,
             OutputHandler(
-                tag=f'best/{evaluator_desc}',
+                tag=f'best-{evaluator_desc}',
                 metric_names=evaluator_metric_names,
-                global_step_transform=global_step_from_engine(trainer),
+                global_step_transform=lambda *args: trainer.state.epoch,
             ),
-            CustomEvents.NEW_BEST_MODEL,
+            BestModelTrigger.Event,
         )
 
     tensorboard_logger.attach(
@@ -112,24 +128,6 @@ def create_standard_trainer_evaluators(
 
     trainer.add_event_handler(
         Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
-    )
-
-    ignite.metrics.MetricsLambda(
-        lambda: model_score_function(evaluators)
-    ).attach(trainer, 'model_score')
-
-    ReduceMetricsLambda(
-        max, lambda: model_score_function(evaluators)
-    ).attach(trainer, 'best_model_score')
-    BestModelTrigger(evaluators.values(), 'best_model_score').attach(trainer)
-
-    tensorboard_logger.attach(
-        trainer,
-        OutputHandler(
-            tag=training_desc,
-            metric_names=['model_score', 'best_model_score'],
-        ),
-        Events.EPOCH_COMPLETED,
     )
 
     def _model_score_function(trainer):

@@ -1,23 +1,44 @@
+from enum import Enum
+from ignite.engine.engine import CallableEvents
 from ignite.engine import Events
-from workflow.ignite.custom_events import CustomEvents
 import numpy as np
 
 
-class BestModelTrigger:
-    def __init__(self, engines_to_trigger, metric_to_track):
-        self.best_score = -np.inf
-        self.engines_to_trigger = engines_to_trigger
-        self.metric_to_track = metric_to_track
+class CustomEvents(CallableEvents, Enum):
+    NEW_BEST_MODEL = 'new_best_model'
 
-    def _check_if_new_best_model(self, engine):
-        score = engine.state.metrics[self.metric_to_track]
+
+class BestModelTrigger:
+    Event = CustomEvents.NEW_BEST_MODEL
+
+    def __init__(self, metric_name, extra_triggered_engines=[]):
+        self.best_score = -np.inf
+        self.extra_triggered_engines = extra_triggered_engines
+        self.metric_name = metric_name
+
+        for engine in extra_triggered_engines:
+            engine.register_events(
+                CustomEvents.NEW_BEST_MODEL,
+                event_to_attr={CustomEvents.NEW_BEST_MODEL: 'new_best_model'}
+            )
+
+    def _check_new_best_model(self, engine):
+        score = engine.state.metrics[self.metric_name]
         if score > self.best_score:
             self.best_score = score
-            for engine_to_trigger in self.engines_to_trigger:
-                engine_to_trigger.fire_event(CustomEvents.NEW_BEST_MODEL)
+
+            engine.fire_event(CustomEvents.NEW_BEST_MODEL)
+
+            for trigger_engine in self.extra_triggered_engines:
+                trigger_engine.fire_event(CustomEvents.NEW_BEST_MODEL)
 
     def attach(self, engine):
+        engine.register_events(
+            CustomEvents.NEW_BEST_MODEL,
+            event_to_attr={CustomEvents.NEW_BEST_MODEL: 'new_best_model'}
+        )
+
         engine.add_event_handler(
             Events.EPOCH_COMPLETED,
-            lambda engine: self._check_if_new_best_model(engine)
+            lambda engine: self._check_new_best_model(engine)
         )
