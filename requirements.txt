@@ -1,8 +1,8 @@
-guildai>=0.7.0rc2
+guildai==0.7.0rc2
 numpy>=1.18.1
 opencv-python>=4.1.2.30
 pandas>=0.25.3
-pytorch-ignite>=0.3.0
+pytorch-ignite==0.3.0
 scikit-learn>=0.20.4
 tensorboard>=2.1.0
 torch>=1.2.0
