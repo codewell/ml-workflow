@@ -1,4 +1,4 @@
-guildai==0.7.0rc2
+guildai==0.7.0rc6
 numpy>=1.18.1
 opencv-python>=4.1.2.30
 pandas>=0.25.3
