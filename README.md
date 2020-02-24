@@ -39,16 +39,14 @@ _Packages installed with the editable flag `-e` can behave differently when it c
     pip install -e .
 
 ## Update package requirements
-Modify `install_requires` in `setup.py`.
-
-## Update development requirements
-
-    source guild-env
-    pip freeze > requirements.txt
+Edit requirements.txt
 
 ## Upload new version to pypi
-Update version in `setup.py` and then:
+List current versions
 
-    source guild-env
-    python setup.py sdist
-    twine upload dist/ml-workflow-<VERSION>.tar.gz
+    git fetch --tags
+    git tag
+
+Be up-to-date with origin/master with no local changes.
+
+    ./publish.sh <version-with-the-v>
