@@ -22,7 +22,7 @@
     cd ml-workflow
     guild init
     source guild-env
-    pytest
+    python -m pytest
 
 ### Use development version in project
 The following steps will create a link to the local directory and any changes made to the package there will directly carry over to your project environment.
