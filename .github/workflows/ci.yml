@@ -12,6 +12,10 @@ jobs:
 
     name: Python ${{ matrix.python-version }}
 
+    env:
+      TERM: vt100
+      
+
     steps:
     - uses: actions/checkout@v2
 
