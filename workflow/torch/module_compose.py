@@ -7,7 +7,7 @@ class ModuleCompose(nn.Module):
         super().__init__()
         self.modules_and_functions = modules_and_functions
 
-        self.modules = nn.ModuleList([
+        self.module_list = nn.ModuleList([
             module_or_function
             for module_or_function in self.modules_and_functions
             if isinstance(module_or_function, nn.Module)
