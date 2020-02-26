@@ -1,3 +1,10 @@
 *.py[cod]
 __pycache__/
 *$py.class
+
+venv/
+input/
+
+dist/
+.eggs/
+build/
