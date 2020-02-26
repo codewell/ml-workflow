@@ -11,7 +11,7 @@ publish () {
 
         python setup.py sdist
 
-        read -r -p "Looks good to publish ${VERSION} to pypi? " response
+        read -r -p "Looks good to publish ${VERSION} to pypi [y/N]?" response
         case "$response" in
             [yY][eE][sS]|[yY])
                 twine upload dist/ml-workflow-${VERSION}.tar.gz
