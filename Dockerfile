@@ -13,6 +13,6 @@ RUN guild init --yes
 RUN echo "source guild-env" >> ${HOME}/.bashrc
 
 COPY workflow ./
-RUN bash -c 'pip install . && python -c "import workflow"'
+RUN bash -c 'source guild-env && pip install . && python -c "import workflow"'
 
 ENTRYPOINT [ "bash" ]
