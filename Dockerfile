@@ -1,6 +1,6 @@
 FROM python:3.8
 
-WORKDIR /usr/src/app
+WORKDIR /usr/src/ml-workflow
 
 RUN pip install --no-cache-dir --pre guildai
 
@@ -13,5 +13,6 @@ RUN guild init --yes
 RUN echo "source guild-env" >> ${HOME}/.bashrc
 
 COPY workflow ./
+RUN bash -c 'pip install . && python -c "import workflow"'
 
 ENTRYPOINT [ "bash" ]
