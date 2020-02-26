@@ -8,10 +8,10 @@ COPY pytest.ini ./
 COPY requirements.txt ./
 COPY scripts/ ./
 COPY setup.* ./
-COPY workflow ./
 
 RUN guild init --yes
-
 RUN echo "source guild-env" >> ${HOME}/.bashrc
+
+COPY workflow ./
 
 ENTRYPOINT [ "bash" ]
