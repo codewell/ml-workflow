@@ -5,6 +5,10 @@ set -o errexit -o nounset -o pipefail -o xtrace
 VERSION="$1"
 VERSION_TAG="v${VERSION}"
 
+command -v git
+command -v python
+command -v twine
+
 publish () {
     (
         VERSION="$1"
