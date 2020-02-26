@@ -9,6 +9,7 @@ COPY requirements.txt ./
 COPY scripts/ ./
 COPY setup.* ./
 
+ENV TERM vt100
 RUN guild init --yes
 RUN echo "source guild-env" >> ${HOME}/.bashrc
 
