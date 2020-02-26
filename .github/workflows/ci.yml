@@ -35,6 +35,13 @@ jobs:
         python --version | grep "Python ${{ matrix.python-version }}"
         deactivate
 
+    - name: Install ml-workflow
+      run: |
+        source guild-env
+        pip install .
+        python -c 'import workflow'
+        deactivate
+
     - name: Test with pytest
       run: |
         source guild-env
