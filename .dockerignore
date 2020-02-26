@@ -1,5 +1,3 @@
 *.py[cod]
 __pycache__/
 *$py.class
-
-.git
