@@ -3,6 +3,7 @@ import ignite
 
 class ProgressBar(ignite.contrib.handlers.tqdm_logger.ProgressBar):
     def __init__(self, desc, *args, **kwargs):
+        kwargs['smoothing'] = kwargs.get('smoothing', .0)
         super().__init__(
             *args,
             **kwargs,
