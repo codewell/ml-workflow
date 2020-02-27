@@ -1,4 +1,4 @@
-import numpy as np
+import torch
 
 from ignite.metrics import (
     ConfusionMatrix,
@@ -7,7 +7,7 @@ from ignite.metrics import (
 
 
 def _matthews_correlation_coefficient(confusion_matrix):
-    [[tp, fp], [fn, tn]] = confusion_matrix
+    [[tp, fp], [fn, tn]] = confusion_matrix.float()
 
     if all([
         0 < tp + fp,
@@ -17,10 +17,10 @@ def _matthews_correlation_coefficient(confusion_matrix):
     ]):
         return (
             (tp * tn - fp * fn)
-                / np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+                / torch.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
         )
     else:
-        return 0.
+        return torch.tensor(0.)
 
 def MatthewsCorrelationCoefficient(output_transform):
     return MetricsLambda(
