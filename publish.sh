@@ -31,10 +31,15 @@ publish () {
 (
     cd "$( dirname "${BASH_SOURCE[0]}" )"
 
+    if [[ $VERSION = v* ]]
+    then
+        echo "VERSION should be specified without prefixed v"
+        exit 6
+    fi
+
     git fetch
     test -z "$(git status --porcelain)" || (echo "Dirty repo"; exit 2)
     test -z "$(git diff origin/master)" || (echo "Not up to date with origin/master"; exit 3)
-
 
     git fetch --tags
     git tag -l | sed '/^'"${VERSION_TAG}"'$/{q2}' > /dev/null \

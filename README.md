@@ -49,4 +49,4 @@ List current versions
 
 Be up-to-date with origin/master with no local changes.
 
-    ./publish.sh <version-with-the-v>
+    ./publish.sh <version-without-the-v>
