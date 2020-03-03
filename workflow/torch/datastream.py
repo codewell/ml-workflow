@@ -132,7 +132,7 @@ class Datastream:
 
 
 def test_datastream():
-    from article_detection.tools import Dataset
+    from workflow.torch.dataset import Dataset
 
     datastream = Datastream.interleave([
         Datastream(Dataset.from_iterable(list('abc'))),
@@ -141,6 +141,6 @@ def test_datastream():
 
     it = iter(datastream.sampler)
 
-    for _ in range(30):
+    for _ in range(3):
         index = next(it)
         print(index, datastream.dataset[index])
