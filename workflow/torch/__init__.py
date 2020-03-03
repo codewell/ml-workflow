@@ -8,3 +8,5 @@ from .model_device import model_device
 from .module_compose import ModuleCompose
 from .to_device import to_device
 from .to_shapes import to_shapes
+from .dataset import Dataset
+from .datastream import Datastream
