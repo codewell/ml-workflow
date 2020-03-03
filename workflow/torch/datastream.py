@@ -38,8 +38,12 @@ class Datastream:
         if n_batches_per_epoch is None:
             sampler = self.sampler
         else:
+            if not hasattr(self.sampler, 'fn'):
+                sampler_fn = lambda: iter(self.sampler)
+            else:
+                sampler_fn = self.sampler.fn
             sampler = Sampler(
-                self.sampler.fn, n_batches_per_epoch * kwargs['batch_size']
+                sampler_fn, n_batches_per_epoch * kwargs['batch_size']
             )
         return torch.utils.data.DataLoader(
             self.dataset, sampler=sampler, **kwargs
