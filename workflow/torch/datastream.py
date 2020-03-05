@@ -38,31 +38,22 @@ class Datastream:
         if n_batches_per_epoch is None:
             sampler = self.sampler
         else:
-            if not hasattr(self.sampler, 'fn'):
-                sampler_fn = lambda: iter(self.sampler)
-            else:
-                sampler_fn = self.sampler.fn
             sampler = Sampler(
-                sampler_fn, n_batches_per_epoch * kwargs['batch_size']
+                self.sampler.fn, n_batches_per_epoch * kwargs['batch_size']
             )
         return torch.utils.data.DataLoader(
             self.dataset, sampler=sampler, **kwargs
         )
 
     @staticmethod
-    def _interleave_samplers(samplers, mapping):
-        reverse_mapping = dict(zip(
-            mapping,
-            range(len(mapping))
-        ))
-
+    def _interleave_samplers(samplers, map_index):
         create_sampler = starcompose(
             partial(map, partial(repeat_map_chain, iter)),
             tuple,
             zip,
             partial(map, enumerate),
             chain.from_iterable,
-            partial(map, reverse_mapping.__getitem__),
+            partial(map, star(map_index)),
             iter,
         )
         return create_sampler(samplers)
@@ -76,47 +67,9 @@ class Datastream:
         sampler = Sampler(
             lambda: Datastream._interleave_samplers(
                 samplers,
-                Dataset.create_concat_mapping(datasets),
+                Dataset.create_to_concat_mapping(datasets),
             ),
             length=max(map(len, datasets)),
-        )
-
-        return Datastream(
-            concat_dataset,
-            sampler,
-        )
-
-    @staticmethod
-    def _concat_samplers(samplers, mapping):
-        reverse_mapping = dict(zip(
-            mapping,
-            range(len(mapping))
-        ))
-
-        create_sampler = starcompose(
-            lambda samplers: chain(
-                *(
-                    [(i, index) for index in sampler]
-                    for i, sampler in enumerate(samplers)
-                )
-            ),
-            partial(map, reverse_mapping.__getitem__),
-            iter,
-        )
-        return create_sampler(samplers)
-
-    @staticmethod
-    def concat(datastreams):
-        datasets = [datastream.dataset for datastream in datastreams]
-        concat_dataset = Dataset.concat(datasets)
-
-        samplers = [datastream.sampler for datastream in datastreams]
-        sampler = Sampler(
-            lambda: Datastream._concat_samplers(
-                samplers,
-                Dataset.create_concat_mapping(datasets),
-            ),
-            length=sum(map(len, datasets)),
         )
 
         return Datastream(
@@ -132,15 +85,13 @@ class Datastream:
 
 
 def test_datastream():
-    from workflow.torch.dataset import Dataset
 
     datastream = Datastream.interleave([
-        Datastream(Dataset.from_iterable(list('abc'))),
-        Datastream(Dataset.from_iterable(list('def'))),
+        Datastream(Dataset.from_indexable(list('abc'))),
+        Datastream(Dataset.from_indexable(list('def'))),
     ])
 
     it = iter(datastream.sampler)
 
-    for _ in range(3):
+    for _ in range(2):
         index = next(it)
-        print(index, datastream.dataset[index])

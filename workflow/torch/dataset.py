@@ -7,39 +7,34 @@ from workflow.functional import starcompose, star
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, iterable, function_list):
+    def __init__(self, source, length, function_list):
         super().__init__()
-        self.iterable = iterable
+        self.source = source
+        self.length = length
         self.function_list = function_list
         self.composed_fn = starcompose(*function_list)
 
     @staticmethod
-    def from_iterable(iterable):
+    def from_indexable(indexable):
         return Dataset(
-            iterable,
+            indexable,
+            len(indexable),
             [lambda ds, index: ds[index]],
         )
-
-    @staticmethod
-    def from_dataset(dataset):
-        return Dataset.from_iterable(dataset)
 
     @staticmethod
     def from_dataframe(dataframe):
         return Dataset(
             dataframe,
+            len(dataframe),
             [lambda df, index: df.iloc[index]],
         )
 
-    @property
-    def dataframe(self):
-        return pd.DataFrame(self.iterable)
-
     def __getitem__(self, index):
-        return self.composed_fn(self.iterable, index)
+        return self.composed_fn(self.source, index)
 
     def __len__(self):
-        return len(self.iterable)
+        return self.length
 
     def __str__(self):
         return str('\n'.join(
@@ -53,58 +48,62 @@ class Dataset(torch.utils.data.Dataset):
     def __add__(self, other):
         return Dataset.concat([self, other])
 
-    def map(self, fn):
+    def map(self, function):
         return Dataset(
-            self.iterable,
-            self.function_list + [fn],
+            self.source,
+            self.length,
+            self.function_list + [function],
         )
 
     def subset(self, indices):
         return Dataset(
             indices,
-            (
-                [lambda indices, outer_index: (
-                    self.iterable, indices[outer_index]
-                )]
-                + self.function_list
-            ),
+            len(indices),
+            [lambda indices, outer_index: (
+                self.source, indices[outer_index]
+            )] + self.function_list,
         )
 
-    def filter(self, filter_fn):
-        '''
-        Filter is not lazy. It must filter the items before hand to allow
-        the sampler to pick unfiltered items.
-        '''
+    @staticmethod
+    def create_from_concat_mapping(datasets):
+        cumulative_lengths = np.cumsum(list(map(len, datasets)))
 
-        return self.subset(np.arange(len(self))[
-            list(map(
-                partial(
-                    starcompose(*self.function_list, filter_fn),
-                    self.iterable,
-                ),
-                range(len(self)),
-            ))
-        ])
+        def from_concat(index):
+            dataset_index = np.sum(index >= cumulative_lengths)
+            if dataset_index == 0:
+                inner_index = index
+            else:
+                inner_index = index - cumulative_lengths[dataset_index - 1]
+
+            return dataset_index, inner_index
+        return from_concat
 
     @staticmethod
-    def create_concat_mapping(datasets):
-        return starcompose(
-            enumerate,
-            partial(map, star(lambda dataset_index, iterable: zip(
-                repeat(dataset_index),
-                range(len(iterable)),
-            ))),
-            chain.from_iterable,
-            list,
-        )(datasets)
+    def create_to_concat_mapping(datasets):
+        cumulative_lengths = np.cumsum(list(map(len, datasets)))
+
+        def to_concat(dataset_index, inner_index):
+            if dataset_index == 0:
+                index = inner_index
+            else:
+                index = inner_index + cumulative_lengths[dataset_index - 1]
+
+            return index
+        return to_concat
 
     @staticmethod
     def concat(datasets):
+        from_concat_mapping = Dataset.create_from_concat_mapping(datasets)
+
         return Dataset(
-            Dataset.create_concat_mapping(datasets),
+            datasets,
+            sum(map(len, datasets)),
             [
-                lambda concat_mapping, index: concat_mapping[index],
-                lambda dataset_index, inner_index: (
+                lambda datasets, index: (
+                    datasets,
+                    *from_concat_mapping(index),
+                ),
+                lambda datasets, dataset_index, inner_index: (
                     datasets[dataset_index][inner_index]
                 ),
             ]
@@ -113,6 +112,9 @@ class Dataset(torch.utils.data.Dataset):
 
 def test_dataset():
     dataset = Dataset.concat([
-        Dataset.from_iterable(list(range(5))),
-        Dataset.from_iterable(list(range(4))),
+        Dataset.from_indexable(list(range(5))),
+        Dataset.from_indexable(list(range(4))),
     ])
+
+    if dataset[6] != 1:
+        raise AssertionError('Unexpected result from concat dataset')
