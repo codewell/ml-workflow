@@ -106,15 +106,35 @@ class Dataset(torch.utils.data.Dataset):
                 lambda datasets, dataset_index, inner_index: (
                     datasets[dataset_index][inner_index]
                 ),
-            ]
+            ],
+        )
+
+    @staticmethod
+    def zip(datasets):
+        return Dataset(
+            datasets,
+            min(map(len, datasets)),
+            [lambda datasets, index: tuple(
+                dataset[index] for dataset in datasets
+            )],
         )
 
 
-def test_dataset():
+def test_concat_dataset():
     dataset = Dataset.concat([
         Dataset.from_indexable(list(range(5))),
         Dataset.from_indexable(list(range(4))),
     ])
 
     if dataset[6] != 1:
-        raise AssertionError('Unexpected result from concat dataset')
+        raise AssertionError('Unexpected result from Dataset.concat')
+
+
+def test_zip_dataset():
+    dataset = Dataset.zip([
+        Dataset.from_indexable(list(range(5))),
+        Dataset.from_indexable(list(range(4))),
+    ])
+
+    if dataset[3] != (3, 3):
+        raise AssertionError('Unexpected result from Dataset.zip')
