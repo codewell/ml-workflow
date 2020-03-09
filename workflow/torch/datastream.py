@@ -52,27 +52,45 @@ class Datastream:
         )
 
     @staticmethod
-    def _interleave_samplers(samplers, map_index):
+    def _interleave_samplers(samplers_and_ns):
+        def batch(iterable, n):
+            while True:
+                yield [next(iterable) for _ in range(n)]
+
         create_sampler = starcompose(
-            partial(map, partial(repeat_map_chain, iter)),
-            tuple,
-            zip,
+            partial(map, star(lambda sampler, n: (
+                repeat_map_chain(iter, sampler),
+                n,
+            ))),
+            partial(map, star(batch)),
+            star(zip),
             partial(map, enumerate),
+            chain.from_iterable,
+            partial(map, star(lambda dataset_index, batch: zip(
+                repeat(dataset_index), batch
+            ))),
             chain.from_iterable,
             partial(map, star(map_index)),
             iter,
         )
-        return create_sampler(samplers)
+        return create_sampler(samplers_and_ns)
 
     @staticmethod
-    def interleave(datastreams):
-        datasets = [datastream.dataset for datastream in datastreams]
+    def interleave(datastreams_and_ns):
+        datastreams_and_ns = [
+            x if type(x) is tuple else (x, 1)
+            x for datastreams_and_ns
+        ]
+
+        datasets = [datastream.dataset for datastream, n in datastreams_and_ns]
         concat_dataset = Dataset.concat(datasets)
 
-        samplers = [datastream.sampler for datastream in datastreams]
+        samplers_and_ns = [
+            datastream.sampler, n for datastream, n in datastreams_and_ns
+        ]
         sampler = Sampler(
             lambda: Datastream._interleave_samplers(
-                samplers,
+                samplers_and_ns,
                 Dataset.create_to_concat_mapping(datasets),
             ),
             length=max(map(len, datasets)),
