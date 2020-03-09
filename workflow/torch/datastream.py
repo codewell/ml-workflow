@@ -52,7 +52,7 @@ class Datastream:
         )
 
     @staticmethod
-    def _interleave_samplers(samplers_and_ns):
+    def _merge_samplers(samplers_and_ns, map_index):
         def batch(iterable, n):
             while True:
                 yield [next(iterable) for _ in range(n)]
@@ -76,20 +76,21 @@ class Datastream:
         return create_sampler(samplers_and_ns)
 
     @staticmethod
-    def interleave(datastreams_and_ns):
+    def merge(datastreams_and_ns):
         datastreams_and_ns = [
             x if type(x) is tuple else (x, 1)
-            x for datastreams_and_ns
+            for x in datastreams_and_ns
         ]
 
         datasets = [datastream.dataset for datastream, n in datastreams_and_ns]
         concat_dataset = Dataset.concat(datasets)
 
         samplers_and_ns = [
-            datastream.sampler, n for datastream, n in datastreams_and_ns
+            (datastream.sampler, n)
+            for (datastream, n) in datastreams_and_ns
         ]
         sampler = Sampler(
-            lambda: Datastream._interleave_samplers(
+            lambda: Datastream._merge_samplers(
                 samplers_and_ns,
                 Dataset.create_to_concat_mapping(datasets),
             ),
@@ -110,7 +111,7 @@ class Datastream:
 
 def test_datastream():
 
-    datastream = Datastream.interleave([
+    datastream = Datastream.merge([
         Datastream(Dataset.from_indexable(list('abc'))),
         Datastream(Dataset.from_indexable(list('def'))),
     ])
