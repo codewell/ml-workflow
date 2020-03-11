@@ -3,7 +3,7 @@ from ignite.engine import Events
 
 
 class ModelCheckpoint:
-    def __init__(self, model_score_function):
+    def __init__(self, model_score_function=None):
         self.model_checkpoint = ignite.handlers.ModelCheckpoint(
             dirname='checkpoints',
             filename_prefix='model',
