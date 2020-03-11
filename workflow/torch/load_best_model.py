@@ -2,28 +2,35 @@ import os
 import torch
 import numpy as np
 
+from workflow.torch import model_device
+
 
 def load_best_model(
     checkpoint_dir,
-    model,
-    optimizer=None,
+    checkpoint,
+    device=None,
     prefix='model_',
-    suffix=None
+    suffix=None,
 ):
     models = os.listdir(checkpoint_dir)
     if suffix is None:
         suffixes = [
-            '_'.join(os.path.splitext(name)[0].lstrip(prefix).split('_')[1:])
+            '_'.join(
+                os.path.splitext(name)[0]
+                .lstrip(prefix).split('_')[1:]
+            )
             for name in models
         ]
         suffix = suffixes[np.argmax([float(s.split('_')[-1]) for s in suffixes])]
 
-    state = torch.load(
+    saved_checkpoint_state = torch.load(
         f'{checkpoint_dir}/{prefix}checkpoint_{suffix}.pth',
-        map_location=next(model.parameters()).device
+        map_location=device,
     )
 
-    model.load_state_dict(state['model'])
-    if optimizer is not None:
-        optimizer.load_state_dict(state['optimizer'])
+    for name, module_or_optimizer in checkpoint.items():
+        module_or_optimizer.load_state_dict(
+            saved_checkpoint_state[name]
+        )
+
     return suffix
