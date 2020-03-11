@@ -1,7 +1,6 @@
 from .get_conv_output_size import get_conv_output_size
 from .get_model_summary import get_model_summary
 from .initialize_weights import initialize_weights
-from .load_best_model import load_best_model
 from .map_dataset import MapDataset
 from .mixup_batch import mixup_batch
 from .model_device import model_device
