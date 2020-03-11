@@ -36,33 +36,34 @@ class ModuleCompose(nn.Module):
         return x
 
     def debug(self, x):
-        for index, module_or_function in enumerate(self.modules_and_functions):
-            if type(module_or_function) is tuple:
-                module, fn = module_or_function
+        with torch.no_grad():
+            for index, module_or_function in enumerate(self.modules_and_functions):
+                if type(module_or_function) is tuple:
+                    module, fn = module_or_function
 
-                if isinstance(module, nn.Module):
-                    n_parameters = sum([p.shape.numel() for p in module.parameters()])
-                    n_parameters_postfix = f' n_parameters: {n_parameters}'
-                else:
-                    n_parameters_postfix = ''
+                    if isinstance(module, nn.Module):
+                        n_parameters = sum([p.shape.numel() for p in module.parameters()])
+                        n_parameters_postfix = f' n_parameters: {n_parameters}'
+                    else:
+                        n_parameters_postfix = ''
 
-                if type(x) is tuple:
-                    print(f'index: {index}, shape: {[y.shape for y in x]}' + n_parameters_postfix)
-                    x = fn(module, *x)
+                    if type(x) is tuple:
+                        print(f'index: {index}, shape: {[y.shape for y in x]}' + n_parameters_postfix)
+                        x = fn(module, *x)
+                    else:
+                        print(f'index: {index}, shape: {x.shape}' + n_parameters_postfix)
+                        x = fn(module, x)
                 else:
-                    print(f'index: {index}, shape: {x.shape}' + n_parameters_postfix)
-                    x = fn(module, x)
-            else:
-                if isinstance(module_or_function, nn.Module):
-                    n_parameters = sum([p.shape.numel() for p in module_or_function.parameters()])
-                    n_parameters_postfix = f' n_parameters: {n_parameters}'
-                else:
-                    n_parameters_postfix = ''
+                    if isinstance(module_or_function, nn.Module):
+                        n_parameters = sum([p.shape.numel() for p in module_or_function.parameters()])
+                        n_parameters_postfix = f' n_parameters: {n_parameters}'
+                    else:
+                        n_parameters_postfix = ''
 
-                if type(x) is tuple:
-                    print(f'index: {index}, shape: {[y.shape for y in x]}' + n_parameters_postfix)
-                    x = module_or_function(*x)
-                else:
-                    print(f'index: {index}, shape: {x.shape}' + n_parameters_postfix)
-                    x = module_or_function(x)
+                    if type(x) is tuple:
+                        print(f'index: {index}, shape: {[y.shape for y in x]}' + n_parameters_postfix)
+                        x = module_or_function(*x)
+                    else:
+                        print(f'index: {index}, shape: {x.shape}' + n_parameters_postfix)
+                        x = module_or_function(x)
         return x
