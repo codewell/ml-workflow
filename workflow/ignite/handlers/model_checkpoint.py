@@ -26,22 +26,22 @@ class ModelCheckpoint:
             **kwargs,
         )
 
+    @staticmethod
     def load(
-        self,
         to_load,
         dirname=None,
         device=None,
         suffix=None,
     ):
         if dirname is None:
-            dirname = self.dirname
+            dirname = ModelCheckpoint.dirname
 
         models = os.listdir(dirname)
         if suffix is None:
             suffixes = [
                 '_'.join(
                     os.path.splitext(name)[0]
-                    .lstrip(self.filename_prefix)
+                    .lstrip(ModelCheckpoint.filename_prefix)
                     .split('_')[2:]
                 )
                 for name in models
@@ -49,7 +49,7 @@ class ModelCheckpoint:
             suffix = suffixes[np.argmax([float(s.split('_')[-1]) for s in suffixes])]
 
         saved_checkpoint_state = torch.load(
-            f'{dirname}/{self.filename_prefix}_checkpoint_{suffix}.pth',
+            f'{dirname}/{ModelCheckpoint.filename_prefix}_checkpoint_{suffix}.pth',
             map_location=device,
         )
 
