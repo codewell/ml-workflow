@@ -4,6 +4,7 @@ from workflow import torch
 
 from .figure_to_numpy import figure_to_numpy
 from .split_new_data import split_new_data
+from .temporary_numpy_seed import temporary_numpy_seed
 
 from pkg_resources import get_distribution, DistributionNotFound
 try:
