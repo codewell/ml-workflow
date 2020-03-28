@@ -56,13 +56,20 @@ class Dataset(torch.utils.data.Dataset):
         )
 
     def subset(self, indices):
-        return Dataset(
-            indices,
-            len(indices),
-            [lambda indices, outer_index: (
-                self.source, indices[outer_index]
-            )] + self.function_list,
-        )
+        if type(self.source) is pd.DataFrame:
+            return Dataset(
+                self.source.iloc[indices],
+                len(indices),
+                self.function_list,
+            )
+        else:
+            return Dataset(
+                indices,
+                len(indices),
+                [lambda indices, outer_index: (
+                    self.source, indices[outer_index]
+                )] + self.function_list,
+            )
 
     @staticmethod
     def create_from_concat_mapping(datasets):
