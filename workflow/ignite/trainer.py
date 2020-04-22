@@ -9,12 +9,8 @@ from workflow.ignite.handlers.metrics_logger import MetricsLogger
 from workflow.ignite.handlers.progress_bar import ProgressBar
 
 
-class Progress:
-    def __init__(self, metric):
-        self.metric = metric
-
-    def __getattr__(self, name):
-        return getattr(self.metric, name)
+PROGRESS_DESC = 'progress'
+TRAIN_DESC = 'train'
 
 
 def trainer(
@@ -51,7 +47,10 @@ def trainer(
 
     trainer = ignite.engine.Engine(train_batch)
 
-    for name, metric in metrics['train'].items():
+    for name, metric in metrics.get(PROGRESS_DESC, dict()).items():
+        metric.attach(trainer, name)
+
+    for name, metric in metrics.get(TRAIN_DESC, dict()).items():
         metric.attach(trainer, name)
 
     evaluators = {
@@ -68,20 +67,26 @@ def trainer(
     EpochLogger().attach(trainer)
 
     # Order of attaching progress bars is important for vscode / atom
-    training_desc = 'train'
-    ProgressBar(desc=training_desc).attach(
-        trainer, metric_names=[
-            name for name, metric in metrics['train'].items()
-            if type(metric) == Progress
-        ]
+    ProgressBar(desc=PROGRESS_DESC).attach(
+        trainer, metric_names=list(metrics.get(PROGRESS_DESC, dict()).keys())
     )
-    MetricsLogger(training_desc).attach(trainer, metrics['train'].keys())
-
     tensorboard_logger.attach(
         trainer,
         OutputHandler(
-            tag=training_desc,
-            metric_names=list(metrics['train'].keys()),
+            tag=PROGRESS_DESC,
+            metric_names=list(metrics.get(PROGRESS_DESC, dict()).keys()),
+        ),
+        Events.ITERATION_COMPLETED,
+    )
+
+    MetricsLogger(TRAIN_DESC).attach(
+        trainer, metrics.get(TRAIN_DESC, dict()).keys()
+    )
+    tensorboard_logger.attach(
+        trainer,
+        OutputHandler(
+            tag=TRAIN_DESC,
+            metric_names=list(metrics.get(TRAIN_DESC, dict()).keys()),
         ),
         Events.ITERATION_COMPLETED,
     )
@@ -119,7 +124,7 @@ def trainer(
         tensorboard_logger.attach(
             trainer,
             log_handler=OptimizerParamsHandler(
-                tag=f'{training_desc}/{name}',
+                tag=f'{TRAIN_DESC}/{name}',
                 param_name='lr',
                 optimizer=optimizer,
             ),
@@ -127,6 +132,3 @@ def trainer(
         )
 
     return trainer, evaluators, tensorboard_logger
-
-
-trainer.Progress = Progress
