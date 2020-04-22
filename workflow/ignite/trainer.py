@@ -38,8 +38,8 @@ def trainer(
     metrics : dict
         dict with one dict each for 'train' and evaluate data loader. Wrap a
         metric with trainer.Progress to show in progress bar.
-    optimizers : list
-        list of optimizers for logging
+    optimizers : dict
+        dict with optimizers for logging
 
     Returns
     -------
