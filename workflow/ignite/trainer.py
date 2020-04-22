@@ -9,19 +9,49 @@ from workflow.ignite.handlers.metrics_logger import MetricsLogger
 from workflow.ignite.handlers.progress_bar import ProgressBar
 
 
-def create_standard_trainer_evaluators(
+class Progress:
+    def __init__(self, metric):
+        self.metric = metric
+
+    def __getattr__(self, name):
+        return getattr(self.metric, name)
+
+
+def trainer(
     train_batch,
     evaluate_batch,
     evaluate_data_loaders,
-    trainer_metrics,
-    evaluator_metrics,
+    metrics,
     optimizers,
-    config,
 ):
+    '''
+    Create standard trainer with evaluators.
+
+    Parameters
+    ----------
+    train_batch : function
+        function that trains on given batch
+    evaluate_batch : function
+        function that evaluates a given batch
+    evaluate_data_loaders: list
+        data loaders that yield batches to evaluate on
+    metrics : dict
+        dict with one dict each for 'train' and evaluate data loader. Wrap a
+        metric with trainer.Progress to show in progress bar.
+    optimizers : list
+        list of optimizers for logging
+
+    Returns
+    -------
+    tuple
+        trainer engine
+        list of evaluator engines
+        tensorboard logger
+    '''
 
     trainer = ignite.engine.Engine(train_batch)
 
-    for name, metric in trainer_metrics.items():
+    for name, metric in metrics['train'].items():
         metric.attach(trainer, name)
 
     evaluators = {
@@ -30,7 +60,7 @@ def create_standard_trainer_evaluators(
     }
 
     for evaluator_name, evaluator in evaluators.items():
-        for metric_name, metric in evaluator_metrics[evaluator_name].items():
+        for metric_name, metric in metrics[evaluator_name].items():
             metric.attach(evaluator, metric_name)
 
     tensorboard_logger = TensorboardLogger(log_dir='tb')
@@ -39,17 +69,19 @@ def create_standard_trainer_evaluators(
 
     # Order of attaching progress bars is important for vscode / atom
     training_desc = 'train'
-    train_metric_names = list(trainer_metrics.keys())
     ProgressBar(desc=training_desc).attach(
-        trainer, metric_names=train_metric_names
+        trainer, metric_names=[
+            name for name, metric in metrics['train'].items()
+            if type(metric) == Progress
+        ]
     )
-    MetricsLogger(training_desc).attach(trainer, train_metric_names)
+    MetricsLogger(training_desc).attach(trainer, metrics['train'].keys())
 
     tensorboard_logger.attach(
         trainer,
         OutputHandler(
             tag=training_desc,
-            metric_names=train_metric_names,
+            metric_names=list(metrics['train'].keys()),
         ),
         Events.ITERATION_COMPLETED,
     )
@@ -62,7 +94,7 @@ def create_standard_trainer_evaluators(
 
 
     for evaluator_desc, evaluator in evaluators.items():
-        evaluator_metric_names = list(evaluator_metrics[evaluator_desc].keys())
+        evaluator_metric_names = list(metrics[evaluator_desc].keys())
 
         trainer.add_event_handler(
             Events.EPOCH_COMPLETED, run_evaluator(evaluator_desc),
@@ -94,8 +126,7 @@ def create_standard_trainer_evaluators(
             event_name=Events.ITERATION_COMPLETED,
         )
 
-    trainer.add_event_handler(
-        Events.ITERATION_COMPLETED, ignite.handlers.TerminateOnNan(),
-    )
-
     return trainer, evaluators, tensorboard_logger
+
+
+trainer.Progress = Progress
