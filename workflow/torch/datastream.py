@@ -7,14 +7,20 @@ from workflow.functional import starcompose, star, repeat_map_chain
 from workflow.torch.dataset import Dataset
 
 
-class Sampler(torch.utils.data.Sampler):
+class BoundlessSampler(torch.utils.data.Sampler):
     def __init__(self, fn, length):
         super().__init__(range(length))
         self.fn = fn
         self.length = length
+        self.queue = self.fn()
 
     def __iter__(self):
-        return islice(self.fn(), self.length)
+        for _ in range(self.length):
+            try:
+                yield next(self.queue)
+            except StopIteration:
+                self.queue = self.fn()
+                yield next(self.queue)
 
     def __len__(self):
         return self.length
@@ -43,7 +49,7 @@ class Datastream:
             else:
                 sampler_fn = lambda: iter(self.sampler)
 
-            sampler = Sampler(
+            sampler = BoundlessSampler(
                 sampler_fn, n_batches_per_epoch * kwargs['batch_size']
             )
 
@@ -89,7 +95,7 @@ class Datastream:
             (datastream.sampler, n)
             for (datastream, n) in datastreams_and_ns
         ]
-        sampler = Sampler(
+        sampler = BoundlessSampler(
             lambda: Datastream._merge_samplers(
                 samplers_and_ns,
                 Dataset.create_to_concat_mapping(datasets),
