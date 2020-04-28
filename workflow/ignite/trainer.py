@@ -67,7 +67,7 @@ def trainer(
     EpochLogger().attach(trainer)
 
     # Order of attaching progress bars is important for vscode / atom
-    ProgressBar(desc=PROGRESS_DESC).attach(
+    ProgressBar(desc=TRAIN_DESC).attach(
         trainer, metric_names=list(metrics.get(PROGRESS_DESC, dict()).keys())
     )
     tensorboard_logger.attach(

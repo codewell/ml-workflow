@@ -15,10 +15,10 @@ class Dataset(torch.utils.data.Dataset):
         self.composed_fn = starcompose(*function_list)
 
     @staticmethod
-    def from_indexable(indexable):
+    def from_subscriptable(subscriptable):
         return Dataset(
-            indexable,
-            len(indexable),
+            subscriptable,
+            len(subscriptable),
             [lambda ds, index: ds[index]],
         )
 
@@ -129,8 +129,8 @@ class Dataset(torch.utils.data.Dataset):
 
 def test_concat_dataset():
     dataset = Dataset.concat([
-        Dataset.from_indexable(list(range(5))),
-        Dataset.from_indexable(list(range(4))),
+        Dataset.from_subscriptable(list(range(5))),
+        Dataset.from_subscriptable(list(range(4))),
     ])
 
     if dataset[6] != 1:
@@ -139,8 +139,8 @@ def test_concat_dataset():
 
 def test_zip_dataset():
     dataset = Dataset.zip([
-        Dataset.from_indexable(list(range(5))),
-        Dataset.from_indexable(list(range(4))),
+        Dataset.from_subscriptable(list(range(5))),
+        Dataset.from_subscriptable(list(range(4))),
     ])
 
     if dataset[3] != (3, 3):

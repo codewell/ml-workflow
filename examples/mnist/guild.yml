@@ -1,0 +1,43 @@
+- package: mnist-package
+  python-requires: ==3.8
+
+- model: mnist
+  sourcecode:
+    - '*.py'
+    - guild.yml
+    - exclude:
+        dir:
+          - input
+          - tb
+          - checkpoints
+  operations:
+    train:
+      main: train
+      flags-import: all
+      output-scalars: off
+      requires:
+        - train_split
+    retrain:
+      main: train
+      flags-import: all
+      output-scalars: off
+      requires:
+        - model
+        - train_split
+    evaluate:
+      main: evaluate
+      flags-import: all
+      output-scalars: off
+      requires:
+        - model
+        - train_split
+  resources:
+    model:
+      name: model
+      path: model
+      sources:
+        - operation: train|retrain
+    train_split:
+      path: mnist/data
+      sources:
+        - mnist/data/split.json

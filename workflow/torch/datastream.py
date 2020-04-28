@@ -118,8 +118,8 @@ class Datastream:
 def test_datastream():
 
     datastream = Datastream.merge([
-        Datastream(Dataset.from_indexable(list('abc'))),
-        Datastream(Dataset.from_indexable(list('def'))),
+        Datastream(Dataset.from_subscriptable(list('abc'))),
+        Datastream(Dataset.from_subscriptable(list('def'))),
     ])
 
     it = iter(datastream.sampler)
