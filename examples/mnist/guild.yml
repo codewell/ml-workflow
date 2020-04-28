@@ -11,11 +11,16 @@
           - tb
           - checkpoints
   operations:
+    prepare:
+      main: prepare
+      flags-import: all
+      output-scalars: off
     train:
       main: train
       flags-import: all
       output-scalars: off
       requires:
+        - prepare
         - train_split
     retrain:
       main: train
@@ -23,6 +28,7 @@
       output-scalars: off
       requires:
         - model
+        - prepare
         - train_split
     evaluate:
       main: evaluate
@@ -30,6 +36,7 @@
       output-scalars: off
       requires:
         - model
+        - prepare
         - train_split
   resources:
     model:
@@ -37,6 +44,11 @@
       path: model
       sources:
         - operation: train|retrain
+    prepare:
+      name: prepare
+      path: .
+      sources:
+        - operation: prepare
     train_split:
       path: mnist/data
       sources:
