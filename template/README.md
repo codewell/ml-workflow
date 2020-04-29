@@ -2,6 +2,7 @@
 
     mkdir my-project
     cd my-project
+    git init
 
     virtualenv venv --python python3.8
     source venv/bin/activate

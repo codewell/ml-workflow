@@ -1,18 +1,31 @@
 # ML Workflow
 
-## Install
+## Install in existing project
 
     pip install ml-workflow
 
-## Usage
+## Create new project with template
+1. Clone and install ml-workflow
 
-    from workflow.functional import starcompose
+        git clone git@github.com:codewell/ml-workflow.git
+        cd ml-workflow
+        virtualenv venv --python python3.8
+        source venv/bin/activate
+        pip install -r requirements.txt
 
-    train_example = starcompose(
-        read_example,
-        augment,
-        preprocess,
-    )
+2. Create project with cookiecutter
+
+        cd ..
+        cookiecutter ml-workflow/template
+        deactivate
+
+3. Activate and install environment
+
+        cd new-project
+        virtualenv venv --python python3.8
+        source venv/bin/activate
+        pip install -r requirements.txt
+        git init
 
 ## Development
 
@@ -20,8 +33,8 @@
 
     git clone git@github.com:codewell/ml-workflow.git
     cd ml-workflow
-    guild init
-    source guild-env
+    virtualenv venv --python python3.8
+    source venv/bin/activate
     python -m pytest
 
 ### Use development version in project
@@ -30,16 +43,13 @@ The following steps will create a link to the local directory and any changes ma
 _Packages installed with the editable flag `-e` can behave differently when it comes to imports._
 
     cd path/to/my/project
-    source guild-env
+    source venv/bin/activate
     pip uninstall ml-workflow
 
     cd path/to/work/area
     git clone git@github.com:codewell/ml-workflow.git
     cd ml-workflow
     pip install -e .
-
-## Update package requirements
-Edit requirements.txt
 
 ## Upload new version to pypi
 List current versions
