@@ -1,6 +1,6 @@
 import numpy as np
 
-from mnist.problem import settings
+from {{cookiecutter.package_name}}.problem import settings
 
 
 def preprocess(example):
@@ -11,4 +11,3 @@ def preprocess(example):
         ),
         class_name=example['class_name'],
     )
-

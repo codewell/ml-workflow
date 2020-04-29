@@ -3,7 +3,7 @@ import pandas as pd
 from workflow import train_test_split
 from workflow.torch import Dataset
 
-from mnist.problem import datasets as problem_datasets
+from {{cookiecutter.package_name}}.problem import datasets as problem_datasets
 
 
 def datasets():
@@ -14,7 +14,7 @@ def datasets():
         key='index',
         test_size=0.2,
         stratify='class_name',
-        split_file='mnist/data/split.json',
+        split_file='{{cookiecutter.package_name}}/data/split.json',
     )
 
     return dict(

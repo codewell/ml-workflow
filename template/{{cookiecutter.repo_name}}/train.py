@@ -5,6 +5,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 import ignite
+import logging
 import workflow
 from workflow import json
 from workflow.functional import starcompose
@@ -12,7 +13,11 @@ from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
 
-from mnist import data, architecture
+from {{cookiecutter.package_name}} import data, architecture
+
+
+logging.getLogger('ignite').setLevel(logging.WARNING)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def set_seeds(seed):
@@ -115,7 +120,7 @@ def train_model(config):
             train=train_metrics,
             **{
                 name: metrics()
-                for name in evaluate_data_loaders.keys()    
+                for name in evaluate_data_loaders.keys()
             }
         ),
         optimizers=optimizer,
@@ -146,7 +151,7 @@ def train_model(config):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--eval_batch_size', type=int, default=128)
     parser.add_argument('--learning_rate', type=float, default=1e-3)

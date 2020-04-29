@@ -1,4 +1,4 @@
-from mnist import problem
+from {{cookiecutter.package_name}} import problem
 
 
 if __name__ == '__main__':

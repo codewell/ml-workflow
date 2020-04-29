@@ -1,15 +1,12 @@
 import numpy as np
 from workflow.torch import Datastream
 
-from mnist.data import datasets, augment
-from mnist.problem import settings
+from {{cookiecutter.package_name}}.data import datasets, augment
+from {{cookiecutter.package_name}}.problem import settings
 
 
 def GradientDatastream():
     dataset = datasets()['gradient']
-
-    # from IPython import embed
-    # embed()
 
     return (
         Datastream.merge([

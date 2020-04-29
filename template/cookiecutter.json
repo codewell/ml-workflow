@@ -1,0 +1,7 @@
+{
+    "repo_name": "my-repo-name",
+    "package_version": "0.0.1",
+    "package_description": "Short description",
+    "package_name": "{{ cookiecutter.repo_name.lower().replace(' ', '_').replace('-', '_') }}",
+    "model_name": "{{ cookiecutter.repo_name.replace('-', ' ').replace('_', ' ').title().replace(' ', '') }}Net"
+}

@@ -1,18 +1,13 @@
 # Log of workflow
 
-    # cookie cutter?
+    mkdir my-project
+    cd my-project
 
     virtualenv venv --python python3.8
     source venv/bin/activate
 
-    # would like this
     pip install ml-workflow
-    python -m workflow.setup_project
+    cookiecutter ??/ml-workflow/template -o ../ -f
+    # python -m workflow.setup_project
 
     pip install -r requirements.txt
-
-
-
-
-
-
