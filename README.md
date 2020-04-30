@@ -16,7 +16,7 @@
 2. Create project with cookiecutter
 
         cd ..
-        cookiecutter ml-workflow/template
+        python -m workflow.setup_project
         deactivate
 
 3. Activate and install environment

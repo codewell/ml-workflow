@@ -45,11 +45,10 @@ def train_model(config):
             train_state, f'model/{model_checkpoint_handler.dirname}', device
         )
 
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = config['learning_rate']
+        workflow.torch.set_learning_rate(optimizer, config['learning_rate'])
 
     n_parameters = sum([
-        p.shape.numel() for p  in model.parameters() if p.requires_grad
+        p.shape.numel() for p in model.parameters() if p.requires_grad
     ])
     print(f'n_parameters: {n_parameters:,}')
 
