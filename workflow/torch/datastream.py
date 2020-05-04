@@ -100,7 +100,7 @@ class Datastream:
                 samplers_and_ns,
                 Dataset.create_to_concat_mapping(datasets),
             ),
-            length=max(map(len, datasets)),
+            length=max(map(len, datasets)) * len(datasets),
         )
 
         return Datastream(
