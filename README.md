@@ -4,28 +4,27 @@
 
     pip install ml-workflow
 
-## Create new project with template
-1. Clone and install ml-workflow
+## MNIST example / Create new project with MNIST template
 
-        git clone git@github.com:codewell/ml-workflow.git
-        cd ml-workflow
-        virtualenv venv --python python3.8
-        source venv/bin/activate
-        pip install -r requirements.txt
+    mkdir new-project
+    cd new-project
+    virtualenv venv -p python3.8
+    source venv/bin/activate
+    pip install ml-workflow
+    python -m workflow.setup_project
 
-2. Create project with cookiecutter
+    pip install -r requirements.txt
+    git init
 
-        cd ..
-        python -m workflow.setup_project
-        deactivate
+    # reactivate environment to find guild
+    deactivate
+    source venv/bin/activate
 
-3. Activate and install environment
+You can train a model and inspect the training with:
 
-        cd new-project
-        virtualenv venv --python python3.8
-        source venv/bin/activate
-        pip install -r requirements.txt
-        git init
+    guild run prepare
+    guild run train
+    guild tensorboard
 
 ## Development
 
@@ -35,6 +34,7 @@
     cd ml-workflow
     virtualenv venv --python python3.8
     source venv/bin/activate
+    pip install -r requirements.txt
     python -m pytest
 
 ### Use development version in project
@@ -44,7 +44,6 @@ _Packages installed with the editable flag `-e` can behave differently when it c
 
     cd path/to/my/project
     source venv/bin/activate
-    pip uninstall ml-workflow
 
     cd path/to/work/area
     git clone git@github.com:codewell/ml-workflow.git

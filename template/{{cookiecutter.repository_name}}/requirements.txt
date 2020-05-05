@@ -33,7 +33,7 @@ lazy-object-proxy==1.4.3
 Markdown==3.2.1
 MarkupSafe==1.1.1
 mccabe==0.6.1
--e git+git@github.com:codewell/ml-workflow.git@cd7f3ed4cc9d97dbe2eff3173413eb3ff1dcdd45#egg=ml_workflow
+ml-workflow
 numpy==1.18.3
 oauthlib==3.1.0
 opencv-python==4.2.0.34
