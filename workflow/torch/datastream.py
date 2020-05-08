@@ -77,7 +77,6 @@ class Datastream:
             ))),
             chain.from_iterable,
             partial(map, star(map_index)),
-            iter,
         )
         return create_sampler(samplers_and_ns)
 
@@ -89,8 +88,6 @@ class Datastream:
         ]
 
         datasets = [datastream.dataset for datastream, n in datastreams_and_ns]
-        concat_dataset = Dataset.concat(datasets)
-
         samplers_and_ns = [
             (datastream.sampler, n)
             for (datastream, n) in datastreams_and_ns
@@ -104,7 +101,33 @@ class Datastream:
         )
 
         return Datastream(
-            concat_dataset,
+            Dataset.concat(datasets),
+            sampler,
+        )
+
+    @staticmethod
+    def _combine_samplers(samplers, map_index):
+        create_sampler = starcompose(
+            partial(map, partial(repeat_map_chain, iter)),
+            tuple,
+            zip,
+            partial(map, map_index),
+        )
+        return create_sampler(samplers)
+
+    @staticmethod
+    def combine(datastreams):
+        datasets = [datastream.dataset for datastream in datastreams]
+        samplers = [datastream.sampler for datastream in datastreams]
+        sampler = BoundlessSampler(
+            lambda: Datastream._combine_samplers(
+                samplers,
+                Dataset.create_to_combine_mapping(datasets),
+            ),
+            length=max(map(len, datasets)),
+        )
+        return Datastream(
+            Dataset.combine(datasets),
             sampler,
         )
 
@@ -115,7 +138,7 @@ class Datastream:
         )
 
 
-def test_datastream():
+def test_datastream_merge():
 
     datastream = Datastream.merge([
         Datastream(Dataset.from_subscriptable(list('abc'))),
@@ -123,6 +146,28 @@ def test_datastream():
     ])
 
     it = iter(datastream.sampler)
-
     for _ in range(2):
         index = next(it)
+
+    batch = next(iter(datastream.data_loader(batch_size=8)))
+
+
+def test_datastream_combine():
+
+    datasets = [
+        Dataset.from_subscriptable([1, 2]),
+        Dataset.from_subscriptable([3, 4, 5]),
+        Dataset.from_subscriptable([6, 7]),
+    ]
+
+    datastreams = [
+        Datastream(ds, sampler=torch.utils.data.SequentialSampler(ds))
+        for ds in datasets
+    ]
+    combined_datastream = Datastream.combine(datastreams)
+
+    batch = next(iter(combined_datastream.data_loader(batch_size=3)))
+    assert len(batch) == 3 and len(batch[0]) == 3
+    assert batch[0][0] == 1 and batch[0][1] == 2 and batch[0][2] == 1
+    assert batch[1][0] == 3 and batch[1][1] == 4 and batch[1][2] == 5
+    assert batch[2][0] == 6 and batch[2][1] == 7 and batch[2][2] == 6
