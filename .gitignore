@@ -6,6 +6,7 @@ __pycache__
 dist
 .eggs/
 build/
+*.pyc
 
 AUTHORS
 ChangeLog
