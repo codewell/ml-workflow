@@ -117,6 +117,51 @@ class Dataset(torch.utils.data.Dataset):
         )
 
     @staticmethod
+    def create_from_combine_mapping(datasets):
+        dataset_lengths = list(map(len, datasets))
+        cumprod_lengths = np.cumprod(dataset_lengths)
+
+        def from_combine(index):
+            return tuple(
+                [index % cumprod_lengths[0]]
+                + [
+                    (index // cumprod_length) % dataset_length
+                    for cumprod_length, dataset_length in zip(
+                        cumprod_lengths[:-1], dataset_lengths[1:]
+                    )
+                ]
+            )
+        return from_combine
+
+    @staticmethod
+    def create_to_combine_mapping(datasets):
+        cumprod_lengths = np.cumprod(list(map(len, datasets)))
+        def to_concat(inner_indices):
+            return inner_indices[0] + sum(
+                [inner_index * cumprod_lengths[i]
+                for i, inner_index in enumerate(inner_indices[1:])]
+            )
+        return to_concat
+
+    @staticmethod
+    def combine(datasets):
+        from_combine_mapping = Dataset.create_from_combine_mapping(datasets)
+
+        return Dataset(
+            datasets,
+            np.prod(list(map(len, datasets))),
+            [
+                lambda datasets, index: (
+                    datasets,
+                    from_combine_mapping(index),
+                ),
+                lambda datasets, indices: tuple([
+                    dataset[index] for dataset, index in zip(datasets, indices)
+                ]),
+            ]
+        )
+
+    @staticmethod
     def zip(datasets):
         return Dataset(
             datasets,
@@ -145,3 +190,24 @@ def test_zip_dataset():
 
     if dataset[3] != (3, 3):
         raise AssertionError('Unexpected result from Dataset.zip')
+
+
+def test_combine_dataset():
+    from itertools import product
+
+    datasets = [
+        Dataset.from_subscriptable([1, 2]),
+        Dataset.from_subscriptable([3, 4, 5]),
+        Dataset.from_subscriptable([6, 7]),
+    ]
+    combined = Dataset.combine(datasets)
+    to_combine_map = Dataset.create_to_combine_mapping(datasets)
+
+    indices = list(product(*(range(len(ds)) for ds in datasets)))
+    assert all(
+        (
+            combined[to_combine_map(inner_indices)]
+            == tuple(ds[i] for ds, i in zip(datasets, inner_indices))
+        )
+        for index, inner_indices in enumerate(indices)
+    )
