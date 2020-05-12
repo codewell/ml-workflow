@@ -56,6 +56,9 @@ class Dataset(torch.utils.data.Dataset):
         )
 
     def subset(self, indices):
+        if type(indices) is pd.Series:
+            indices = np.argwhere(indices.values).squeeze(1)
+
         if type(self.source) is pd.DataFrame:
             return Dataset(
                 self.source.iloc[indices],
