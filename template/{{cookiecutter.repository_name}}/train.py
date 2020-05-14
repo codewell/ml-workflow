@@ -158,7 +158,6 @@ if __name__ == '__main__':
     parser.add_argument('--n_batches_per_epoch', default=50, type=int)
     parser.add_argument('--n_batches_per_step', default=1, type=int)
     parser.add_argument('--n_workers', default=2, type=int)
-    args = parser.parse_args()
 
     try:
         __IPYTHON__
