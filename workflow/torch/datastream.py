@@ -106,7 +106,7 @@ class Datastream:
         )
 
     @staticmethod
-    def _combine_samplers(samplers, map_index):
+    def _zip_samplers(samplers, map_index):
         create_sampler = starcompose(
             partial(map, partial(repeat_map_chain, iter)),
             tuple,
@@ -116,11 +116,11 @@ class Datastream:
         return create_sampler(samplers)
 
     @staticmethod
-    def combine(datastreams):
+    def zip(datastreams):
         datasets = [datastream.dataset for datastream in datastreams]
         samplers = [datastream.sampler for datastream in datastreams]
         sampler = BoundlessSampler(
-            lambda: Datastream._combine_samplers(
+            lambda: Datastream._zip_samplers(
                 samplers,
                 Dataset.create_to_combine_mapping(datasets),
             ),
@@ -152,7 +152,7 @@ def test_datastream_merge():
     batch = next(iter(datastream.data_loader(batch_size=8)))
 
 
-def test_datastream_combine():
+def test_datastream_zip():
 
     datasets = [
         Dataset.from_subscriptable([1, 2]),
@@ -164,9 +164,9 @@ def test_datastream_combine():
         Datastream(ds, sampler=torch.utils.data.SequentialSampler(ds))
         for ds in datasets
     ]
-    combined_datastream = Datastream.combine(datastreams)
+    zipped_datastream = Datastream.zip(datastreams)
 
-    batch = next(iter(combined_datastream.data_loader(batch_size=3)))
+    batch = next(iter(zipped_datastream.data_loader(batch_size=3)))
     assert len(batch) == 3 and len(batch[0]) == 3
     assert batch[0][0] == 1 and batch[0][1] == 2 and batch[0][2] == 1
     assert batch[1][0] == 3 and batch[1][1] == 4 and batch[1][2] == 5
