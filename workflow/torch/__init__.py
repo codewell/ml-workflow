@@ -11,3 +11,4 @@ from workflow.torch.dataset import Dataset
 from workflow.torch.datastream import Datastream
 from workflow.torch.requires_nograd import requires_nograd
 from workflow.torch.set_learning_rate import set_learning_rate
+from workflow.torch.set_seeds import set_seeds

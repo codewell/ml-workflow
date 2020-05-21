@@ -9,7 +9,7 @@ class ProgressBar(ignite.contrib.handlers.tqdm_logger.ProgressBar):
             **kwargs,
             desc=desc,
             bar_format=(
-                '{desc} {percentage:3.0f}%|{bar} {n}/{total}{postfix} '
+                '{desc} {percentage:3.0f}%|{bar} {n_fmt}/{total}{postfix} '
                 '[{elapsed}<{remaining} {rate_fmt}]'
             ),
         )

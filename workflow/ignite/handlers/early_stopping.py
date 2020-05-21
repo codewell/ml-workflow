@@ -27,5 +27,5 @@ class EarlyStopping:
         )
         tqdm.write(
             f'best score so far: {self.early_stopping_handler.best_score:.4f}'
-            f' (stopping in {epochs_until_stop} epochs)\n'
+            f' (stopping in {epochs_until_stop:.0f} epochs)\n'
         )
