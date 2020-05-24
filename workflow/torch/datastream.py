@@ -26,6 +26,37 @@ class DatastreamSampler(torch.utils.data.Sampler):
         return self.length
 
 
+class MergeSampler(DatastreamSampler):
+    def __init__(self, samplers_and_ns, map_index):
+        super().__init__(
+            lambda: iter(
+                MergeSampler.merge_samplers(samplers_and_ns, map_index)
+            ),
+            (
+                max([len(sampler) for sampler, n in samplers_and_ns])
+                * len(samplers_and_ns)
+            ),
+        )
+        self.samplers_and_ns = samplers_and_ns
+        self.map_index = map_index
+    
+    @staticmethod
+    def merge_samplers(samplers_and_ns, map_index):
+        def batch(iterable, n):
+            while True:
+                yield [next(iterable) for _ in range(n)]
+
+        index_batch = zip(*[
+            batch(map(
+                partial(map_index, dataset_index),
+                repeat_map_chain(iter, sampler),
+            ), n)
+            for dataset_index, (sampler, n) in enumerate(samplers_and_ns)
+        ])
+
+        return chain.from_iterable(chain.from_iterable(index_batch))
+
+
 class Datastream:
     def __init__(self, dataset, sampler=None):
         super().__init__()
@@ -53,23 +84,6 @@ class Datastream:
         )
 
     @staticmethod
-    def _merge_samplers(samplers_and_ns, map_index):
-        def batch(iterable, n):
-            while True:
-                yield [next(iterable) for _ in range(n)]
-
-
-        index_batch = zip(*[
-            batch(map(
-                partial(map_index, dataset_index),
-                repeat_map_chain(iter, sampler),
-            ), n)
-            for dataset_index, (sampler, n) in enumerate(samplers_and_ns)
-        ])
-
-        return chain.from_iterable(chain.from_iterable(index_batch))
-
-    @staticmethod
     def merge(datastreams_and_ns):
         datastreams_and_ns = [
             x if type(x) is tuple else (x, 1)
@@ -81,17 +95,13 @@ class Datastream:
             (datastream.sampler, n)
             for (datastream, n) in datastreams_and_ns
         ]
-        sampler = DatastreamSampler(
-            lambda: Datastream._merge_samplers(
-                samplers_and_ns,
-                Dataset.create_to_concat_mapping(datasets),
-            ),
-            length=max(map(len, datasets)) * len(datasets),
-        )
 
         return Datastream(
             Dataset.concat(datasets),
-            sampler,
+            MergeSampler(
+                samplers_and_ns,
+                Dataset.create_to_concat_mapping(datasets),
+            ),
         )
 
     @staticmethod
