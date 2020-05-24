@@ -7,7 +7,7 @@ from workflow.functional import starcompose, star, repeat_map_chain
 from workflow.torch.dataset import Dataset
 
 
-class BoundlessSampler(torch.utils.data.Sampler):
+class DatastreamSampler(torch.utils.data.Sampler):
     def __init__(self, fn, length):
         super().__init__(range(length))
         self.fn = fn
@@ -30,15 +30,10 @@ class Datastream:
     def __init__(self, dataset, sampler=None):
         super().__init__()
         self.dataset = dataset
-        self._sampler = sampler
 
-    @property
-    def sampler(self):
-        '''Weights not implemented'''
-        if self._sampler is None:
-            return torch.utils.data.RandomSampler(self.dataset)
-        else:
-            return self._sampler
+        if sampler is None:
+            sampler = torch.utils.data.RandomSampler(self.dataset)
+        self.sampler = sampler
 
     def data_loader(self, n_batches_per_epoch=None, **kwargs):
         if n_batches_per_epoch is None:
@@ -49,7 +44,7 @@ class Datastream:
             else:
                 sampler_fn = lambda: iter(self.sampler)
 
-            sampler = BoundlessSampler(
+            sampler = DatastreamSampler(
                 sampler_fn, n_batches_per_epoch * kwargs['batch_size']
             )
 
@@ -63,22 +58,16 @@ class Datastream:
             while True:
                 yield [next(iterable) for _ in range(n)]
 
-        create_sampler = starcompose(
-            partial(map, star(lambda sampler, n: (
+
+        index_batch = zip(*[
+            batch(map(
+                partial(map_index, dataset_index),
                 repeat_map_chain(iter, sampler),
-                n,
-            ))),
-            partial(map, star(batch)),
-            star(zip),
-            partial(map, enumerate),
-            chain.from_iterable,
-            partial(map, star(lambda dataset_index, batch: zip(
-                repeat(dataset_index), batch
-            ))),
-            chain.from_iterable,
-            partial(map, star(map_index)),
-        )
-        return create_sampler(samplers_and_ns)
+            ), n)
+            for dataset_index, (sampler, n) in enumerate(samplers_and_ns)
+        ])
+
+        return chain.from_iterable(chain.from_iterable(index_batch))
 
     @staticmethod
     def merge(datastreams_and_ns):
@@ -92,7 +81,7 @@ class Datastream:
             (datastream.sampler, n)
             for (datastream, n) in datastreams_and_ns
         ]
-        sampler = BoundlessSampler(
+        sampler = DatastreamSampler(
             lambda: Datastream._merge_samplers(
                 samplers_and_ns,
                 Dataset.create_to_concat_mapping(datasets),
@@ -119,7 +108,7 @@ class Datastream:
     def zip(datastreams):
         datasets = [datastream.dataset for datastream in datastreams]
         samplers = [datastream.sampler for datastream in datastreams]
-        sampler = BoundlessSampler(
+        sampler = DatastreamSampler(
             lambda: Datastream._zip_samplers(
                 samplers,
                 Dataset.create_to_combine_mapping(datasets),
@@ -134,7 +123,7 @@ class Datastream:
     def map(self, fn):
         return Datastream(
             self.dataset.map(fn),
-            self._sampler,
+            self.sampler,
         )
 
 
