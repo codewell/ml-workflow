@@ -8,6 +8,9 @@ from workflow.functional import starcompose, star, repeat_map_chain
 from workflow.torch.dataset import Dataset
 
 
+
+# TODO: n_samples, length are different??
+
 class StandardSampler(torch.utils.data.WeightedRandomSampler):
     def __init__(self, length, proportion=1.0, replacement=False):
         super().__init__(
@@ -37,34 +40,32 @@ class StandardSampler(torch.utils.data.WeightedRandomSampler):
 
 
 class MergeSampler(torch.utils.data.Sampler):
-    def __init__(self, samplers_and_ns):
-        super().__init__(
-            list(range(MergeSampler.merged_samplers_length(samplers_and_ns)))
+    def __init__(self, samplers, datasets, ns):
+        self.samplers = samplers
+        self.ns = ns
+        self.from_mapping = Dataset.create_from_concat_mapping(datasets)
+        self.merged_samplers = MergeSampler.merge_samplers(
+            samplers, datasets, ns
         )
-        self.samplers_and_ns = samplers_and_ns
-        self.from_mapping = Dataset.create_from_concat_mapping([
-            sampler for sampler, n in samplers_and_ns
-        ])
-        self.merged_samplers = MergeSampler.merge_samplers(samplers_and_ns)
+        self.length = MergeSampler.merged_samplers_length(samplers)
 
     def __len__(self):
-        return len(self.data_source)
+        return self.length
 
     def __iter__(self):
         return iter(self.merged_samplers)
 
     @staticmethod
-    def merged_samplers_length(samplers_and_ns):
+    def merged_samplers_length(samplers):
+        # TODO: this is probably incorrect?
         return (
-            max([len(sampler) for sampler, n in samplers_and_ns])
-            * len(samplers_and_ns)
+            max([len(sampler) for sampler in samplers])
+            * len(samplers)
         )
 
     @staticmethod
-    def merge_samplers(samplers_and_ns):
-        to_mapping = Dataset.create_to_concat_mapping([
-            sampler for sampler, n in samplers_and_ns
-        ])
+    def merge_samplers(samplers, datasets, ns):
+        to_mapping = Dataset.create_to_concat_mapping(datasets)
 
         def batch(iterable, n):
             while True:
@@ -75,7 +76,7 @@ class MergeSampler(torch.utils.data.Sampler):
                 partial(to_mapping, dataset_index),
                 repeat_map_chain(iter, sampler),
             ), n)
-            for dataset_index, (sampler, n) in enumerate(samplers_and_ns)
+            for dataset_index, (sampler, n) in enumerate(zip(samplers, ns))
         ])
 
         return chain.from_iterable(chain.from_iterable(index_batch))
@@ -100,23 +101,21 @@ class MergeSampler(torch.utils.data.Sampler):
 
 
 class ZipSampler(torch.utils.data.Sampler):
-    def __init__(self, samplers):
-        super().__init__(list(range(
-            max(map(len, samplers))
-        )))
+    def __init__(self, samplers, datasets):
         self.samplers = samplers
-        self.from_mapping = Dataset.create_from_combine_mapping(samplers)
-        self.zipped_samplers = ZipSampler.zip_samplers(samplers)
+        self.from_mapping = Dataset.create_from_combine_mapping(datasets)
+        self.zipped_samplers = ZipSampler.zip_samplers(samplers, datasets)
+        self.length = max(map(len, samplers))
 
     def __len__(self):
-        return len(self.data_source)
+        return self.length
 
     def __iter__(self):
         return iter(self.zipped_samplers)
 
     @staticmethod
-    def zip_samplers(samplers):
-        to_mapping = Dataset.create_to_combine_mapping(samplers)
+    def zip_samplers(samplers, datasets):
+        to_mapping = Dataset.create_to_combine_mapping(datasets)
 
         create_sampler = starcompose(
             partial(map, partial(repeat_map_chain, iter)),
@@ -220,26 +219,15 @@ class Datastream:
             for x in datastreams_and_ns
         ]
 
-        datasets = [datastream.dataset for datastream, n in datastreams_and_ns]
-        samplers_and_ns = [
-            (datastream.sampler, n)
-            for (datastream, n) in datastreams_and_ns
-        ]
-
         return Datastream(
-            Dataset.concat(datasets),
-            MergeSampler(samplers_and_ns),
+            Dataset.concat([
+                datastream.dataset for datastream, n in datastreams_and_ns
+            ]),
+            MergeSampler(*zip(*[
+                (datastream.sampler, datastream.dataset, n)
+                for (datastream, n) in datastreams_and_ns
+            ])),
         )
-
-    @staticmethod
-    def _zip_samplers(samplers, map_index):
-        create_sampler = starcompose(
-            partial(map, partial(repeat_map_chain, iter)),
-            tuple,
-            zip,
-            partial(map, map_index),
-        )
-        return create_sampler(samplers)
 
     @staticmethod
     def zip(datastreams):
@@ -247,9 +235,10 @@ class Datastream:
             Dataset.combine([
                 datastream.dataset for datastream in datastreams
             ]),
-            ZipSampler([
-                datastream.sampler for datastream in datastreams
-            ]),
+            ZipSampler(*zip(*[
+                (datastream.sampler, datastream.dataset)
+                for datastream in datastreams
+            ])),
         )
 
     def map(self, fn):
@@ -277,11 +266,13 @@ def test_datastream_merge():
     for _ in range(2):
         index = next(it)
 
-    batch = next(iter(datastream.data_loader(batch_size=8)))
+    it = iter(datastream.data_loader(batch_size=8))
+    for _ in range(10):
+        batch = next(it)
 
 
 def test_datastream_zip():
-
+    print('hello')
     datasets = [
         Dataset.from_subscriptable([1, 2]),
         Dataset.from_subscriptable([3, 4, 5]),
@@ -299,6 +290,34 @@ def test_datastream_zip():
     assert batch[0][0] == 1 and batch[0][1] == 2 and batch[0][2] == 1
     assert batch[1][0] == 3 and batch[1][1] == 4 and batch[1][2] == 5
     assert batch[2][0] == 6 and batch[2][1] == 7 and batch[2][2] == 6
+
+def test_datastream_merge_zip_merge():
+    '''
+    repeating because it only sometimes recreated an error that occured
+    when using mixup/mixmatch
+    '''
+
+    def RandomDatastream():
+        return Datastream(Dataset.from_subscriptable(
+            list(range(np.random.randint(1, 10)))
+        ))
+
+    def MergedDatastream():
+        return Datastream.merge([RandomDatastream(), RandomDatastream()])
+
+    def ZippedMergedDatastream():
+        return Datastream.zip([MergedDatastream(), MergedDatastream()])
+
+    for attempt in range(10):
+        print('attempt:', attempt)
+        datastream = Datastream.merge([
+            (ZippedMergedDatastream(), 1),
+            (ZippedMergedDatastream(), 5),
+        ])
+
+        it = iter(datastream.data_loader(batch_size=16, n_batches_per_epoch=10))
+        for _ in range(10):
+            print(next(it))
 
 
 # def test_datastream_simple_weights():
