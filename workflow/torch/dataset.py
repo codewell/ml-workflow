@@ -55,6 +55,17 @@ class Dataset(torch.utils.data.Dataset):
             self.function_list + [function],
         )
 
+    def zip_index(self):
+        composed_fn = self.composed_fn
+        return Dataset(
+            self.source,
+            self.length,
+            [lambda source, index: (
+                composed_fn(source, index),
+                index,
+            )],
+        )
+
     def subset(self, indices):
         if type(indices) is pd.Series:
             indices = np.argwhere(indices.values).squeeze(1)
