@@ -8,40 +8,43 @@ from workflow.functional import starcompose, star, repeat_map_chain
 from workflow.torch.dataset import Dataset
 
 
-
-# TODO: n_samples, length are different??
-
 class StandardSampler(torch.utils.data.WeightedRandomSampler):
     def __init__(self, length, proportion=1.0, replacement=False):
         super().__init__(
-            np.ones(length),
+            torch.ones(length).double(),
             num_samples=int(length * proportion),
             replacement=replacement,
         )
 
-    def update_weights_(self, weights, index=None):
-        if index is None:
-            self.weights[:] = weights
+    def update_weights_(self, weights_or_fn, indices=None):
+        if callable(weights_or_fn):
+            if indices is None:
+                self.weights[:] = weights_or_fn(self.weights)
+            else:
+                self.weights[indices] = weights_or_fn(self.weights[indices])
         else:
-            self.weights[index] = weights
+            if not isinstance(weights_or_fn, torch.Tensor):
+                weights_or_fn = torch.tensor(weights_or_fn).double()
+
+            if indices is None:
+                self.weights[:] = weights_or_fn
+            else:
+                self.weights[indices] = weights_or_fn
 
     def sample_proportion(self, proportion):
-        return WeightedSampler(
-            self.length,
-            propertion,
+        sampler = StandardSampler(
+            len(self),
+            proportion,
             self.replacement,
         )
-
-    # def __getitem__(self, index):
-    #     return self.weights[index]
-
-    # def __setitem__(self, index, value):
-    #     pass
+        sampler.update_weights_(self.weights)
+        return sampler
 
 
 class MergeSampler(torch.utils.data.Sampler):
     def __init__(self, samplers, datasets, ns):
         self.samplers = samplers
+        self.datasets = datasets
         self.ns = ns
         self.from_mapping = Dataset.create_from_concat_mapping(datasets)
         self.merged_samplers = MergeSampler.merge_samplers(
@@ -81,23 +84,36 @@ class MergeSampler(torch.utils.data.Sampler):
 
         return chain.from_iterable(chain.from_iterable(index_batch))
 
-    def update_weights_(self, weights, indices=None):
-        # TODO: this can be done more effectively by batching updates
-        # or let weights be a function instead?
-        if indices is None:
-            indices = range(len(weights))
+    def update_weights_(self, weights_or_fn, indices=None):
+        if callable(weights_or_fn):
+            if indices is None:
+                for sampler in self.samplers:
+                    sampler.update_weights_(weights_or_fn)
+            else:
+                for index in indices:
+                    dataset_index, inner_index = self.from_mapping(index)
+                    self.samplers[dataset_index].update_weights_(
+                        weights_or_fn, inner_index
+                    )
+        else:
+            if indices is None:
+                indices = range(len(weights_or_fn))
 
-        for weight, index in zip(weights, indices):
-            dataset_index, inner_index = self.from_mapping(index)
-            self.samplers_and_ns[dataset_index][0].update_weights_(
-                weight, inner_index
-            )
+            for weight, index in zip(weights_or_fn, indices):
+                dataset_index, inner_index = self.from_mapping(index)
+                self.samplers[dataset_index].update_weights_(
+                    weight, inner_index
+                )
 
     def sample_proportion(self, proportion):
-        return MergeSampler([
-            (sampler.sample_proportion(proportion), n)
-            for sampler, n in self.samplers_and_ns
-        ])
+        return MergeSampler(
+            [
+                sampler.sample_proportion(proportion)
+                for sampler in self.samplers
+            ],
+            self.datasets,
+            self.ns,
+        )
 
 
 class ZipSampler(torch.utils.data.Sampler):
@@ -125,17 +141,26 @@ class ZipSampler(torch.utils.data.Sampler):
         )
         return create_sampler(samplers)
 
-    def update_weights_(self, weights, indices=None):
-        # TODO: this can be done more effectively by batching updates
-        # or let weights be a function instead?
-        if indices is None:
-            indices = range(len(weights))
+    def update_weights_(self, weights_or_fn, indices=None):
+        if callable(weights_or_fn):
+            if indices is None:
+                for sampler in self.samplers:
+                    sampler.update_weights_(weights_or_fn)
+            else:
+                for index in indices:
+                    dataset_index, inner_index = self.from_mapping(index)
+                    self.samplers[dataset_index].update_weights_(
+                        weights_or_fn, inner_index
+                    )
+        else:
+            if indices is None:
+                indices = range(len(weights))
 
-        for weight, index in zip(weights, indices):
-            dataset_index, inner_index = self.from_mapping(index)
-            self.samplers[dataset_index].update_weights_(
-                weight, inner_index
-            )
+            for weight, index in zip(weights, indices):
+                dataset_index, inner_index = self.from_mapping(index)
+                self.samplers[dataset_index].update_weights_(
+                    weight, inner_index
+                )
 
     def sample_proportion(self, proportion):
         return ZipSampler([
@@ -254,7 +279,6 @@ class Datastream:
         )
 
 
-
 def test_datastream_merge():
 
     datastream = Datastream.merge([
@@ -272,7 +296,7 @@ def test_datastream_merge():
 
 
 def test_datastream_zip():
-    print('hello')
+
     datasets = [
         Dataset.from_subscriptable([1, 2]),
         Dataset.from_subscriptable([3, 4, 5]),
@@ -320,46 +344,60 @@ def test_datastream_merge_zip_merge():
             print(next(it))
 
 
-# def test_datastream_simple_weights():
+def test_datastream_simple_weights():
 
-#     dataset = Dataset.from_subscriptable([1, 2])
-#     datastream = (
-#         Datastream(dataset)
-#         .zip_index(lambda integer, index: dict(
-#             integer=integer,
-#             index=index,
-#         ))
-#         .sample_proportion(0.1)
-#     )
+    dataset = Dataset.from_subscriptable([1, 2, 3, 4])
+    datastream = (
+        Datastream(dataset)
+        .zip_index()
+        .map(lambda integer, index: dict(
+            integer=integer,
+            index=index,
+        ))
+        .sample_proportion(0.5)
+    )
 
-#     datastream.weight(index)
-#     datastream.update_weight(index, weight)
-#     datastream.update_weight(index, lambda weight: weight + 1)
-#     datastream.update_all_weights(lambda weights: weights * 0.1)
+    removed_indices = [0, 3]
+    datastream.update_weights_(np.array([0.0, 0]), removed_indices)
 
-#     datastream.update_weight(index, weight) # all at once?
+    samples = list(datastream.data_loader(batch_size=1))
 
-#     next(iter(datastream.data_loader(batch_size=3)))
+    if len(samples) != 2:
+        raise AssertionError(
+            'Expected 2 samples due to proportion 0.5 and dataset length 4'
+        )
 
-#     datastream.weights[indices] = weights
+    for sample in samples:
+        if sample['index'] in removed_indices:
+            raise AssertionError(
+                'Samples with 0 weight were drawn from the dataset'
+            )
 
 
-# def test_datastream_weights():
+def test_merge_datastream_weights():
 
-#     datasets = [
-#         Dataset.from_subscriptable([1, 2]),
-#         Dataset.from_subscriptable([3, 4, 5]),
-#         Dataset.from_subscriptable([6, 7]),
-#     ]
+    datasets = [
+        Dataset.from_subscriptable([1, 2]),
+        Dataset.from_subscriptable([3, 4, 5]),
+        Dataset.from_subscriptable([6, 7]),
+    ]
 
-#     datastreams = [
-#         Datastream(ds, sampler=torch.utils.data.SequentialSampler(ds))
-#         for ds in datasets
-#     ]
-#     zipped_datastream = Datastream.zip(datastreams)
+    datastream = (
+        Datastream.merge([
+            Datastream(dataset)
+            for dataset in datasets
+        ])
+        .zip_index()
+        .map(lambda integer, index: dict(
+            integer=integer,
+            index=index,
+        ))
+        .sample_proportion(0.5)
+    )
 
-#     batch = next(iter(zipped_datastream.data_loader(batch_size=3)))
-#     assert len(batch) == 3 and len(batch[0]) == 3
-#     assert batch[0][0] == 1 and batch[0][1] == 2 and batch[0][2] == 1
-#     assert batch[1][0] == 3 and batch[1][1] == 4 and batch[1][2] == 5
-#     assert batch[2][0] == 6 and batch[2][1] == 7 and batch[2][2] == 6
+    removed_indices = [0, 3]
+    datastream.update_weights_(np.array([0.0, 0]), removed_indices)
+
+    samples = list(datastream.data_loader(batch_size=4, n_batches_per_epoch=4))
+
+    datastream.update_weights_(lambda weights: weights * 0.9 + 1 * 0.1)
