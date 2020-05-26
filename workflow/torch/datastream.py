@@ -16,20 +16,14 @@ class StandardSampler(torch.utils.data.WeightedRandomSampler):
             replacement=replacement,
         )
 
-    def update_weights_(self, weights_or_fn, indices=None):
-        if callable(weights_or_fn):
-            if indices is None:
-                self.weights[:] = weights_or_fn(self.weights)
-            else:
-                self.weights[indices] = weights_or_fn(self.weights[indices])
-        else:
-            if not isinstance(weights_or_fn, torch.Tensor):
-                weights_or_fn = torch.tensor(weights_or_fn).double()
+    def weight(self, index):
+        return self.weights[index]
 
-            if indices is None:
-                self.weights[:] = weights_or_fn
-            else:
-                self.weights[indices] = weights_or_fn
+    def update_weights_(self, function):
+        self.weights = function(self.weights)
+        
+    def update_example_weight_(self, weight, index):
+        self.weights[index] = weight
 
     def sample_proportion(self, proportion):
         sampler = StandardSampler(
@@ -37,7 +31,7 @@ class StandardSampler(torch.utils.data.WeightedRandomSampler):
             proportion,
             self.replacement,
         )
-        sampler.update_weights_(self.weights)
+        sampler.weights = self.weights
         return sampler
 
 
@@ -84,26 +78,19 @@ class MergeSampler(torch.utils.data.Sampler):
 
         return chain.from_iterable(chain.from_iterable(index_batch))
 
-    def update_weights_(self, weights_or_fn, indices=None):
-        if callable(weights_or_fn):
-            if indices is None:
-                for sampler in self.samplers:
-                    sampler.update_weights_(weights_or_fn)
-            else:
-                for index in indices:
-                    dataset_index, inner_index = self.from_mapping(index)
-                    self.samplers[dataset_index].update_weights_(
-                        weights_or_fn, [inner_index]
-                    )
-        else:
-            if indices is None:
-                indices = range(len(weights_or_fn))
+    def weight(self, index):
+        dataset_index, inner_index = self.from_mapping(index)
+        return self.samplers[dataset_index].weight(inner_index)
 
-            for weight, index in zip(weights_or_fn, indices):
-                dataset_index, inner_index = self.from_mapping(index)
-                self.samplers[dataset_index].update_weights_(
-                    [weight], [inner_index]
-                )
+    def update_weights_(self, function):
+        for sampler in self.samplers:
+            sampler.update_weights_(function)
+
+    def update_example_weight_(self, weight, index):
+        dataset_index, inner_index = self.from_mapping(index)
+        self.samplers[dataset_index].update_example_weight_(
+            weight, inner_index
+        )
 
     def sample_proportion(self, proportion):
         return MergeSampler(
@@ -142,33 +129,89 @@ class ZipSampler(torch.utils.data.Sampler):
         )
         return create_sampler(samplers)
 
-    def update_weights_(self, weights_or_fn, indices=None):
-        if callable(weights_or_fn):
-            if indices is None:
-                for sampler in self.samplers:
-                    sampler.update_weights_(weights_or_fn)
-            else:
-                for index in indices:
-                    inner_indices = self.from_mapping(index)
-                    self.samplers[dataset_index].update_weights_(
-                        weights_or_fn, inner_indices
-                    )
-        else:
-            if indices is None:
-                indices = range(len(weights_or_fn))
+    def weight(self, index):
+        return [
+            sampler.weight(inner_index)
+            for sampler, inner_index in zip(
+                self.samplers, self.from_mapping(index)
+            )
+        ]
 
-            for weight, index in zip(weights_or_fn, indices):
-                inner_indices = self.from_mapping(index)
-                for sampler, inner_index in zip(self.samplers, inner_indices):
-                    sampler.update_weights_(
-                        [weight], [inner_index]
-                    )
+    def update_weights_(self, function):
+        for sampler in self.samplers:
+            sampler.update_weights_(function)
+
+    def update_example_weight_(self, weights, index):
+        inner_indices = self.from_mapping(index)
+        for sampler, weight, inner_index in zip(self.samplers, weights, inner_indices):
+            sampler.update_example_weight_(
+                weight, inner_index
+            )
 
     def sample_proportion(self, proportion):
         return ZipSampler([
             sampler.sample_proportion(proportion)
             for sampler in self.samplers
         ])
+
+
+class MultiSampler(torch.utils.data.Sampler):
+    def __init__(self, samplers, dataset):
+        self.samplers = samplers
+        self.dataset = dataset
+        self.length = len(dataset)
+        self.merged_samplers = MultiSampler.merge_samplers(
+            samplers,
+            [1 for _ in samplers],
+        )
+
+    @staticmethod
+    def from_number(n, dataset):
+        return MultiSampler(
+            [StandardSampler(len(dataset)) for _ in range(n)],
+            dataset,
+        )
+
+    def __len__(self):
+        return self.length
+
+    def __iter__(self):
+        return iter(self.merged_samplers)
+
+    @staticmethod
+    def merge_samplers(samplers, ns):
+        def batch(iterable, n):
+            while True:
+                yield [next(iterable) for _ in range(n)]
+
+        index_batch = zip(*[
+            batch(repeat_map_chain(iter, sampler), n)
+            for sampler, n in zip(samplers, ns)
+        ])
+
+        return chain.from_iterable(chain.from_iterable(index_batch))
+
+    def weight(self, index):
+        return [sampler.weight(index) for sampler in self.samplers]
+
+    def update_weights_(self, function):
+        for sampler in self.samplers:
+            sampler.update_weights_(function)
+
+    def update_example_weight_(self, weights, index):
+        for sampler, weight in zip(self.samplers, weights):
+            sampler.update_example_weight_(
+                weight, index
+            )
+
+    def sample_proportion(self, proportion):
+        return MultiSampler(
+            [
+                sampler.sample_proportion(proportion)
+                for sampler in self.samplers
+            ],
+            self.dataset
+        )
 
 
 class RepeatSampler(torch.utils.data.Sampler):
@@ -197,8 +240,14 @@ class RepeatSampler(torch.utils.data.Sampler):
     def __len__(self):
         return self.length
 
-    def update_weights_(self, weights, index):
-        self.sampler.update_weights_(weights, index)
+    def weight(self, index):
+        return self.sampler.weight(index)
+
+    def update_weights_(self, function):
+        self.sampler.update_weights_(function)
+
+    def update_example_weight_(self, weights, index):
+        self.sampler.update_example_weight_(weights, index)
 
     def sample_proportion(self, proportion):
         return RepeatSampler(
@@ -230,8 +279,14 @@ class Datastream:
             self.dataset, sampler=sampler, **kwargs
         )
 
-    def update_weights_(self, weights, index=None):
-        self.sampler.update_weights_(weights, index)
+    def weight(self, index):
+        return self.sampler.weight(index)
+
+    def update_weights_(self, function):
+        self.sampler.update_weights_(function)
+
+    def update_example_weight_(self, weights, index):
+        self.sampler.update_example_weight_(weights, index)
 
     def sample_proportion(self, proportion):
         return Datastream(
@@ -266,6 +321,12 @@ class Datastream:
                 (datastream.sampler, datastream.dataset)
                 for datastream in datastreams
             ])),
+        )
+
+    def multi_sample(self, n):
+        return Datastream(
+            self.dataset,
+            MultiSampler.from_number(n, self.dataset),
         )
 
     def map(self, fn):
@@ -361,7 +422,8 @@ def test_datastream_simple_weights():
     )
 
     removed_indices = [0, 3]
-    datastream.update_weights_(np.array([0.0, 0]), removed_indices)
+    for index in removed_indices:
+        datastream.update_example_weight_(0.0, removed_indices)
 
     samples = list(datastream.data_loader(batch_size=1))
 
@@ -399,7 +461,8 @@ def test_merge_datastream_weights():
     )
 
     removed_indices = [0, 3]
-    datastream.update_weights_(np.array([0.0, 0]), removed_indices)
+    for index in removed_indices:
+        datastream.update_example_weight_(0.0, index)
 
     samples = list(datastream.data_loader(batch_size=4, n_batches_per_epoch=4))
 
