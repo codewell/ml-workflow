@@ -93,7 +93,7 @@ class MergeSampler(torch.utils.data.Sampler):
                 for index in indices:
                     dataset_index, inner_index = self.from_mapping(index)
                     self.samplers[dataset_index].update_weights_(
-                        weights_or_fn, inner_index
+                        weights_or_fn, [inner_index]
                     )
         else:
             if indices is None:
@@ -102,7 +102,7 @@ class MergeSampler(torch.utils.data.Sampler):
             for weight, index in zip(weights_or_fn, indices):
                 dataset_index, inner_index = self.from_mapping(index)
                 self.samplers[dataset_index].update_weights_(
-                    weight, inner_index
+                    [weight], [inner_index]
                 )
 
     def sample_proportion(self, proportion):
@@ -119,6 +119,7 @@ class MergeSampler(torch.utils.data.Sampler):
 class ZipSampler(torch.utils.data.Sampler):
     def __init__(self, samplers, datasets):
         self.samplers = samplers
+        self.datasets = datasets
         self.from_mapping = Dataset.create_from_combine_mapping(datasets)
         self.zipped_samplers = ZipSampler.zip_samplers(samplers, datasets)
         self.length = max(map(len, samplers))
@@ -148,19 +149,20 @@ class ZipSampler(torch.utils.data.Sampler):
                     sampler.update_weights_(weights_or_fn)
             else:
                 for index in indices:
-                    dataset_index, inner_index = self.from_mapping(index)
+                    inner_indices = self.from_mapping(index)
                     self.samplers[dataset_index].update_weights_(
-                        weights_or_fn, inner_index
+                        weights_or_fn, inner_indices
                     )
         else:
             if indices is None:
-                indices = range(len(weights))
+                indices = range(len(weights_or_fn))
 
-            for weight, index in zip(weights, indices):
-                dataset_index, inner_index = self.from_mapping(index)
-                self.samplers[dataset_index].update_weights_(
-                    weight, inner_index
-                )
+            for weight, index in zip(weights_or_fn, indices):
+                inner_indices = self.from_mapping(index)
+                for sampler, inner_index in zip(self.samplers, inner_indices):
+                    sampler.update_weights_(
+                        [weight], [inner_index]
+                    )
 
     def sample_proportion(self, proportion):
         return ZipSampler([
@@ -314,6 +316,7 @@ def test_datastream_zip():
     assert batch[0][0] == 1 and batch[0][1] == 2 and batch[0][2] == 1
     assert batch[1][0] == 3 and batch[1][1] == 4 and batch[1][2] == 5
     assert batch[2][0] == 6 and batch[2][1] == 7 and batch[2][2] == 6
+
 
 def test_datastream_merge_zip_merge():
     '''
