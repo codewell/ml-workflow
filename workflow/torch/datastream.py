@@ -17,12 +17,15 @@ class StandardSampler(torch.utils.data.WeightedRandomSampler):
         )
 
     def weight(self, index):
-        return self.weights[index]
+        return self.weights[index].item()
 
     def update_weights_(self, function):
         self.weights = function(self.weights)
         
     def update_example_weight_(self, weight, index):
+        if hasattr(weight, 'item'):
+            weight = weight.item()
+
         self.weights[index] = weight
 
     def sample_proportion(self, proportion):
@@ -155,6 +158,7 @@ class ZipSampler(torch.utils.data.Sampler):
         ])
 
 
+# TODO: write custom sampler that avoid replacement between samplers
 class MultiSampler(torch.utils.data.Sampler):
     def __init__(self, samplers, dataset):
         self.samplers = samplers
@@ -328,6 +332,13 @@ class Datastream:
             self.dataset,
             MultiSampler.from_number(n, self.dataset),
         )
+
+
+    @staticmethod
+    def shared_dataset(datastreams):
+        # same as multi sample? possibly allow different pipelines?
+        pass
+
 
     def map(self, fn):
         return Datastream(
