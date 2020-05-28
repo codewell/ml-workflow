@@ -20,7 +20,7 @@ class StandardSampler(torch.utils.data.WeightedRandomSampler):
         return self.weights[index].item()
 
     def update_weights_(self, function):
-        self.weights = function(self.weights)
+        self.weights[:] = function(self.weights)
         
     def update_example_weight_(self, weight, index):
         if hasattr(weight, 'item'):
@@ -36,6 +36,12 @@ class StandardSampler(torch.utils.data.WeightedRandomSampler):
         )
         sampler.weights = self.weights
         return sampler
+
+    def state_dict(self):
+        return dict(weights=self.weights)
+
+    def load_state_dict(self, state_dict):
+        self.weights[:] = state_dict['weights']
 
 
 class MergeSampler(torch.utils.data.Sampler):
@@ -105,6 +111,15 @@ class MergeSampler(torch.utils.data.Sampler):
             self.ns,
         )
 
+    def state_dict(self):
+        return dict(
+            samplers=[sampler.state_dict() for sampler in self.samplers]
+        )
+
+    def load_state_dict(self, state_dict):
+        for sampler, state_dict in zip(self.samplers, state_dict['samplers']):
+            sampler.load_state_dict(state_dict)
+
 
 class ZipSampler(torch.utils.data.Sampler):
     def __init__(self, samplers, datasets):
@@ -156,6 +171,16 @@ class ZipSampler(torch.utils.data.Sampler):
             sampler.sample_proportion(proportion)
             for sampler in self.samplers
         ])
+
+    def state_dict(self):
+        return dict(
+            samplers=[sampler.state_dict() for sampler in self.samplers]
+        )
+
+    def load_state_dict(self, state_dict):
+        for sampler, state_dict in zip(self.samplers, state_dict['samplers']):
+            sampler.load_state_dict(state_dict)
+
 
 
 # TODO: write custom sampler that avoid replacement between samplers
@@ -217,6 +242,16 @@ class MultiSampler(torch.utils.data.Sampler):
             self.dataset
         )
 
+    def state_dict(self):
+        return dict(
+            samplers=[sampler.state_dict() for sampler in self.samplers]
+        )
+
+    def load_state_dict(self, state_dict):
+        for sampler, state_dict in zip(self.samplers, state_dict['samplers']):
+            sampler.load_state_dict(state_dict)
+
+
 
 class RepeatSampler(torch.utils.data.Sampler):
     def __init__(self, sampler, length, epoch_bound=False):
@@ -259,6 +294,12 @@ class RepeatSampler(torch.utils.data.Sampler):
             self.length,
             self.epoch_bound,
         )
+
+    def state_dict(self):
+        return self.sampler.state_dict()
+
+    def load_state_dict(self, state_dict):
+        return self.sampler.load_state_dict(state_dict)
 
 
 class Datastream:
@@ -351,6 +392,12 @@ class Datastream:
             self.dataset.zip_index(),
             self.sampler,
         )
+
+    def state_dict(self):
+        return dict(sampler=self.sampler.state_dict())
+
+    def load_state_dict(self, state_dict):
+        return self.sampler.load_state_dict(state_dict['sampler'])
 
 
 def test_datastream_merge():
