@@ -58,8 +58,9 @@ def train_test_split(dataframe, key, test_size, stratify, split_file):
             if probability >= 1e-6 and np.random.rand() <= probability:
                 n_new_test += 1
 
-            if n_new_test >= 1:
+            n_new_test = min(len(unassigned), n_new_test)
 
+            if n_new_test >= 1:
                 new_test = np.random.choice(
                     unassigned[key], size=n_new_test, replace=False
                 )
