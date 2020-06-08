@@ -7,7 +7,7 @@ from workflow.ignite.decorators.to_device import to_device
 
 
 def detach(x):
-    if type(x) is torch.Tensor:
+    if isinstance(x, torch.Tensor):
         return x.detach()
     else:
         return x
