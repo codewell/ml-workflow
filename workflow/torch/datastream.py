@@ -63,7 +63,6 @@ class MergeSampler(torch.utils.data.Sampler):
 
     @staticmethod
     def merged_samplers_length(samplers):
-        # TODO: this is probably incorrect?
         return (
             max([len(sampler) for sampler in samplers])
             * len(samplers)
