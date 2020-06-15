@@ -24,27 +24,27 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install latest pre-release guildai
+    - name: Install virtualenv
       run: |
-        pip install --no-cache-dir --pre guildai
+        pip install --no-cache-dir virtualenv
 
     - name: Install dependencies
       run: |
-        guild init --yes
-        source guild-env
+        virtualenv venv -p python${{ matrix.python-version }}
+        source venv/bin/activate
         python --version | grep "Python ${{ matrix.python-version }}"
         deactivate
 
     - name: Install ml-workflow
       run: |
-        source guild-env
+        source venv/bin/activate
         pip install .
         python -c 'import workflow'
         deactivate
 
     - name: Test with pytest
       run: |
-        source guild-env
+        source venv/bin/activate
         pip install pytest
         python -m pytest
         deactivate

@@ -1,4 +1,14 @@
 # ML Workflow
+ML workflow contains our process of bringing a project to fruition as
+efficiently as possible. This is subject to change as we iterate and improve.
+This package implements tools that add missing features or help bridge the gap
+between frameworks and tools that we utilize.
+
+The main packages that we build around are:
+
+- pytorch
+- ignite
+- pytorch-datastream
 
 ## Install in existing project
 
