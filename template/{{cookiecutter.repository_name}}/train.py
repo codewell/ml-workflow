@@ -1,4 +1,5 @@
 import os
+from functools import partial
 import numpy as np
 import random
 import argparse
@@ -9,6 +10,8 @@ import logging
 import workflow
 from workflow import json
 from workflow.functional import starcompose
+from workflow.torch import set_seeds
+from workflow.ignite import worker_init
 from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
@@ -16,15 +19,8 @@ from datastream import Datastream
 
 from {{cookiecutter.package_name}} import data, architecture
 
-
 logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-
-def set_seeds(seed):
-    np.random.seed(seed=seed + 1)
-    random.seed(seed + 2)
-    torch.manual_seed(seed + 3)
 
 
 def train_model(config):
@@ -153,6 +149,7 @@ def train_model(config):
                 batch_size=config['batch_size'],
                 num_workers=config['n_workers'],
                 n_batches_per_epoch=config['n_batches_per_epoch'],
+                worker_init_fn=partial(worker_init, config['seed'], trainer),
             )
         ),
         max_epochs=config['max_epochs'],
