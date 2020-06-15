@@ -126,7 +126,16 @@ def train_model(config):
         optimizers=optimizer,
     )
 
-    model_checkpoint_handler.attach(trainer, train_state)
+    workflow.ignite.handlers.ModelScore(
+        lambda: evaluators['evaluate_early_stopping'].state.metrics['loss'],
+        train_state,
+        {
+            name: metrics()
+            for name in evaluate_data_loaders.keys()
+        },
+        tensorboard_logger,
+        config,
+    ).attach(trainer, evaluators)
 
     LearningRateScheduler(
         optimizer,
@@ -158,6 +167,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_epochs', type=int, default=20)
     parser.add_argument('--n_batches_per_epoch', default=50, type=int)
     parser.add_argument('--n_batches_per_step', default=1, type=int)
+    parser.add_argument('--patience', type=float, default=10)
     parser.add_argument('--n_workers', default=2, type=int)
 
     try:
