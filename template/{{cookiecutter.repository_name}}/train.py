@@ -12,6 +12,7 @@ from workflow.functional import starcompose
 from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
+from datastream import Datastream
 
 from {{cookiecutter.package_name}} import data, architecture
 
@@ -100,7 +101,7 @@ def train_model(config):
 
     evaluate_data_loaders = {
         f'evaluate_{name}': (
-            workflow.torch.Datastream(dataset)
+            Datastream(dataset)
             .map(architecture.preprocess)
             .data_loader(
                 batch_size=config['eval_batch_size'],

@@ -1,11 +1,14 @@
 import pandas as pd
 import torchvision
-from workflow.torch import Dataset
+from datastream import Dataset
 
 
 def datasets():
     train_dataset = torchvision.datasets.MNIST(
         'cache', train=True, download=True
+    )
+    test_dataset = torchvision.datasets.MNIST(
+        'cache', train=False, download=True
     )
 
     return dict(
@@ -24,11 +27,8 @@ def datasets():
             ))
         ),
         compare=(
-            Dataset.from_subscriptable(
-                torchvision.datasets.MNIST(
-                    'cache', train=False, download=True
-                )
-            )
+            Dataset.from_subscriptable(list(range(len(test_dataset))))
+            .map(lambda index: test_dataset[index])
             .map(lambda image, class_name: dict(
                 image=image,
                 class_name=class_name,

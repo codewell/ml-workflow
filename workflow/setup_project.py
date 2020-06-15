@@ -15,7 +15,7 @@ if __name__ == '__main__':
         repository_path = cookiecutter(
             '/'.join(__file__.split('/')[:-2]) + '/template',
         )
-
+    
     repository_path = Path(repository_path)
 
     move_to_current = click.prompt(
@@ -25,9 +25,9 @@ if __name__ == '__main__':
     )
 
     if move_to_current == 'y':
-        temporary_path = repository_path.replace(
-            repository_path.parent / 'temporary'
-        )
+        temporary_path = repository_path.parent / 'temporary'
+        repository_path.replace(temporary_path)
+
         for path in Path(temporary_path).glob('*'):
             path.replace(temporary_path.parent / path.name)
 
