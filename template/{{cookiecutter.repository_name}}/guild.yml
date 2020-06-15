@@ -14,6 +14,13 @@
       main: prepare
       flags-import: all
       output-scalars: off
+    search:
+      main: search
+      flags-import: all
+      output-scalars: off
+      requires:
+        - prepare
+        - train_split
     train:
       main: train
       flags-import: all

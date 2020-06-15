@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 import pandas as pd
 import torchvision
@@ -30,6 +31,9 @@ def save_labels(dataset, image_directory, csv_path):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    args = parser.parse_args()
+
     dataset_and_directory = [
         (
             problem.settings.TRAIN_CSV,
