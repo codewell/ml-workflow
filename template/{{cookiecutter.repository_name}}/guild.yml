@@ -45,7 +45,7 @@
         - operation: train|retrain
     prepare:
       name: prepare
-      path: .
+      path: prepare
       sources:
         - operation: prepare
     train_split:

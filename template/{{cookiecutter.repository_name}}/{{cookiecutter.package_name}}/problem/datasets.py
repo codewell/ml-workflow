@@ -1,37 +1,30 @@
+from pathlib import Path
+from PIL import Image
 import pandas as pd
-import torchvision
 from datastream import Dataset
+
+from {{cookiecutter.package_name}} import problem
+
+
+def MnistDataset(dataframe):
+    return (
+        Dataset.from_dataframe(dataframe)
+        .map(lambda row: (
+            Path(row['image_path']),
+            row['class_name'],
+        ))
+        .map(lambda image_path, class_name: dict(
+            image=Image.open('prepare' / image_path),
+            class_name=class_name,
+        ))
+    )
 
 
 def datasets():
-    train_dataset = torchvision.datasets.MNIST(
-        'cache', train=True, download=True
-    )
-    test_dataset = torchvision.datasets.MNIST(
-        'cache', train=False, download=True
-    )
+    train_df = pd.read_csv('prepare' / problem.settings.TRAIN_CSV)
+    test_df = pd.read_csv('prepare' / problem.settings.TEST_CSV)
 
     return dict(
-        train=(
-            Dataset.from_dataframe(
-                pd.DataFrame(dict(
-                    index=range(len(train_dataset)),
-                    class_name=train_dataset.targets,
-                ))
-            )
-            .map(lambda row: row['index'])
-            .map(lambda index: train_dataset[index])
-            .map(lambda image, class_name: dict(
-                image=image,
-                class_name=class_name,
-            ))
-        ),
-        compare=(
-            Dataset.from_subscriptable(list(range(len(test_dataset))))
-            .map(lambda index: test_dataset[index])
-            .map(lambda image, class_name: dict(
-                image=image,
-                class_name=class_name,
-            ))
-        ),
+        train=MnistDataset(train_df),
+        compare=MnistDataset(test_df),
     )
