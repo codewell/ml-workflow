@@ -1,7 +1,6 @@
-- package: {{cookiecutter.package_name}}
-  python-requires: ==3.8
+- package: {{cookiecutter.repository_name}}-package
 
-- model: {{cookiecutter.model_name}}
+- model: {{cookiecutter.repository_name}}-model
   sourcecode:
     - '*.py'
     - guild.yml

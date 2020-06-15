@@ -12,7 +12,6 @@ echo "test
 test
 0.1.0
 test project
-TestNet
 y" | python -m workflow.setup_project
 pip install -r requirements.txt
 guild run prepare -y

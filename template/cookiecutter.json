@@ -2,6 +2,5 @@
     "repository_name": "my-repo-name",
     "package_name": "{{ cookiecutter.repository_name.lower().replace(' ', '_').replace('-', '_') }}",
     "package_version": "0.0.1",
-    "package_description": "Short description",
-    "model_name": "{{ cookiecutter.repository_name.replace('-', ' ').replace('_', ' ').title().replace(' ', '') }}Net"
+    "package_description": "Short description"
 }
