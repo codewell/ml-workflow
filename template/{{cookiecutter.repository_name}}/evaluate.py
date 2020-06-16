@@ -11,6 +11,10 @@ import argparse
 import torch
 import torch.nn.functional as F
 import ignite
+from ignite.engine import Engine, Events
+from ignite.contrib.handlers.tensorboard_logger import (
+    TensorboardLogger, OutputHandler
+)
 import logging
 import workflow
 from workflow import json
@@ -19,6 +23,11 @@ from workflow.torch import set_seeds
 from workflow.ignite import worker_init
 from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
+)
+from workflow.ignite.handlers import (
+    EpochLogger,
+    MetricsLogger,
+    ProgressBar
 )
 from datastream import Datastream
 
@@ -76,30 +85,35 @@ def evaluate(config):
         for name, dataset in data.datasets().items()
     }
 
-    ignite.Engine(evaluate_batch).run(
-        data=(
-            data.GradientDatastream()
-            .map(architecture.preprocess)
-            .data_loader(
-                batch_size=config['batch_size'],
-                num_workers=config['n_workers'],
-                n_batches_per_epoch=config['n_batches_per_epoch'],
-                worker_init_fn=partial(worker_init, config['seed'], trainer_),
-            )
-        ),
-        max_epochs=config['max_epochs'],
-    )
+    tensorboard_logger = TensorboardLogger(log_dir='tb')
+
+    for evaluator_desc, data_loader in evaluate_data_loaders.items():
+        engine = Engine(evaluate_batch)
+
+        metrics_ = metrics()
+
+        for metric_name, metric in metrics_.items():
+            metric.attach(engine, metric_name)
+
+        evaluator_metric_names = list(metrics_.keys())
+
+        ProgressBar(desc=evaluator_desc).attach(engine)
+        MetricsLogger(evaluator_desc).attach(engine, evaluator_metric_names)
+        tensorboard_logger.attach(
+            engine,
+            OutputHandler(
+                tag=evaluator_desc,
+                metric_names=evaluator_metric_names,
+            ),
+            Events.EPOCH_COMPLETED,
+        )
+
+        engine.run(data=data_loader)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--eval_batch_size', type=int, default=128)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--max_epochs', type=int, default=20)
-    parser.add_argument('--n_batches_per_epoch', default=50, type=int)
-    parser.add_argument('--n_batches_per_step', default=1, type=int)
-    parser.add_argument('--patience', type=float, default=10)
     parser.add_argument('--n_workers', default=2, type=int)
 
     try:
