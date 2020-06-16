@@ -7,7 +7,7 @@ def metrics():
             lambda output: output['loss']
         ),
         accuracy=ignite.metrics.Accuracy(lambda output: (
-            output['predicted_class_name'],
-            output['class_name'],
+            output['predicted_logits'],
+            output['class_index'],
         )),
     )

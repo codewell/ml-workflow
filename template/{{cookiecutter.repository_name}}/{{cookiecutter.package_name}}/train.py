@@ -49,13 +49,13 @@ def train(config):
 
     def loss(batch):
         return F.cross_entropy(
-            batch['predicted_class_name'], batch['class_name'],
+            batch['predicted_logits'], batch['class_index'],
         )
 
 
     @workflow.ignite.decorators.train(model, optimizer)
     def train_batch(engine, batch):
-        batch['predicted_class_name'] = model(batch['image'])
+        batch['predicted_logits'] = model(batch['image'])
         loss_ = loss(batch)
         loss_.backward()
         batch['loss'] = loss_.item()
@@ -64,7 +64,7 @@ def train(config):
 
     @workflow.ignite.decorators.evaluate(model)
     def evaluate_batch(engine, batch):
-        batch['predicted_class_name'] = model(batch['image'])
+        batch['predicted_logits'] = model(batch['image'])
         batch['loss'] = loss(batch).item()
         return batch
 

@@ -39,7 +39,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 def loss(batch):
     return F.cross_entropy(
-        batch['predicted_class_name'], batch['class_name'],
+        batch['predicted_logits'], batch['class_index'],
     )
 
 
@@ -58,7 +58,7 @@ def evaluate(config):
 
     @workflow.ignite.decorators.evaluate(model)
     def evaluate_batch(engine, batch):
-        batch['predicted_class_name'] = model(batch['image'])
+        batch['predicted_logits'] = model(batch['image'])
         batch['loss'] = loss(batch).item()
         return batch
 

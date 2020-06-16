@@ -5,6 +5,20 @@ import torchvision
 
 from {{cookiecutter.package_name}} import problem
 
+# more realistic to have class names without a natural 1-to-1 mapping with
+# integers
+CLASS_TO_NAME = dict(zip(range(10), [
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+]))
 CACHE_ROOT = 'cache'
 
 
@@ -21,11 +35,17 @@ def save_labels(dataset, image_directory, csv_path):
     (
         pd.DataFrame(dict(
             index=range(len(dataset)),
-            class_name=dataset.targets,
+            number=dataset.targets,
         ))
-        .assign(image_path=lambda df: df['index'].apply(
-            lambda index: image_path(image_directory, index)
-        ))
+        .assign(
+            class_name=lambda df: (
+                df['number'].map(CLASS_TO_NAME)
+            ),
+            image_path=lambda df: df['index'].apply(
+                lambda index: image_path(image_directory, index)
+            )
+        )
+        [['index', 'image_path', 'class_name']]
         .to_csv(csv_path)
     )
 

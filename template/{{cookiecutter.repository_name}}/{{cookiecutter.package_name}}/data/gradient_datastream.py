@@ -10,9 +10,9 @@ def GradientDatastream():
 
     return (
         Datastream.merge([
-            Datastream(
-                dataset.subset(lambda df: df['class_name'] == class_name)
-            )
+            Datastream(dataset.subset(
+                lambda df: df['class_name'] == class_name
+            ))
             for class_name in settings.CLASS_NAMES
         ])
         .map(augment)

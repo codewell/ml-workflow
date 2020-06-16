@@ -9,5 +9,5 @@ def preprocess(example):
             np.array(example['image'], dtype=np.float32),
             axis=0,
         ),
-        class_name=example['class_name'],
+        class_index=settings.CLASS_NAMES.index(example['class_name']),
     )
