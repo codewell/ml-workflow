@@ -13,7 +13,7 @@ def MnistDataset(dataframe):
             Path(row['image_path']),
             row['class_name'],
         ))
-        .map(lambda image_path, class_name: dict(
+        .map(lambda image_path, class_name: problem.Example(
             image=Image.open('prepare' / image_path),
             class_name=class_name,
         ))
