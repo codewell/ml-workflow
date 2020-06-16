@@ -18,8 +18,8 @@ test project
 y" | python -m workflow.setup_project
 pip install -r requirements.txt
 guild run prepare -y
-# guild run search_lr n_batches=10 -y
+guild run search_lr n_batches=10 -y
 guild run train max_epochs=2 n_batches_per_epoch=2 -y
-# guild run retrain max_epochs=1 n_batches_per_epoch=1 -y
+guild run retrain max_epochs=1 n_batches_per_epoch=1 -y
 guild run evaluate -y
 deactivate

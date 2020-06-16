@@ -37,6 +37,12 @@ logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
+def loss(batch):
+    return F.cross_entropy(
+        batch['predicted_class_name'], batch['class_name'],
+    )
+
+
 def evaluate(config):
     device = torch.device('cuda' if config['use_cuda'] else 'cpu')
 
@@ -44,18 +50,10 @@ def evaluate(config):
 
     train_state = dict(model=model)
 
-    model_checkpoint_handler = workflow.ignite.handlers.ModelCheckpoint()
-
     print('Loading model checkpoint')
-    model_checkpoint_handler.load(
-        train_state, f'model/{model_checkpoint_handler.dirname}', device
+    workflow.ignite.handlers.ModelCheckpoint.load(
+        train_state, 'model/checkpoints', device
     )
-
-
-    def loss(batch):
-        return F.cross_entropy(
-            batch['predicted_class_name'], batch['class_name'],
-        )
 
 
     @workflow.ignite.decorators.evaluate(model)

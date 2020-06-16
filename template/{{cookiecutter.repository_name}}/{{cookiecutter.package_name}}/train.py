@@ -33,12 +33,10 @@ def train(config):
 
     train_state = dict(model=model, optimizer=optimizer)
 
-    model_checkpoint_handler = workflow.ignite.handlers.ModelCheckpoint()
-
     if os.path.exists('model'):
         print('Loading model checkpoint')
-        model_checkpoint_handler.load(
-            train_state, f'model/{model_checkpoint_handler.dirname}', device
+        workflow.ignite.handlers.ModelCheckpoint.load(
+            train_state, 'model/checkpoints', device
         )
 
         workflow.torch.set_learning_rate(optimizer, config['learning_rate'])
