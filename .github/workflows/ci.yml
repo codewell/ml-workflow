@@ -59,25 +59,6 @@ jobs:
         flake8 workflow --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         deactivate
 
-    - name: Setup mnist template
+    - name: Setup and run mnist template
       run: |
-        source venv/bin/activate
-        mkdir new-project
-        cd new-project
-        echo "test
-        test
-        0.1.0
-        test project
-        y" | python -m workflow.setup_project
-        pip install -r requirements.txt
-        deactivate
-
-    - name: Run mnist template
-      run: |
-        source venv/bin/activate
-        cd new-project
-        guild run prepare -y
-        guild run search n_batches=10 -y
-        guild run train max_epochs=2 n_batches_per_epoch=2 -y
-        guild run retrain max_epochs=2 n_batches_per_epoch=1 -y
-        deactivate
+        ./test_template.sh

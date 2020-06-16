@@ -10,37 +10,10 @@ from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
 
-from {{cookiecutter.package_name}} import data, architecture, trainer_setup
+from {{cookiecutter.package_name}} import data, architecture, train
 
 logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-
-def train_model(config):
-    trainer_setup_ = trainer_setup(config)
-    trainer_ = trainer_setup_['trainer']
-
-    LearningRateScheduler(
-        trainer_setup_['optimizer'],
-        starcompose(
-            warmup(150),
-            cyclical(length=500),
-        ),
-    ).attach(trainer_)
-
-    trainer_.run(
-        data=(
-            data.GradientDatastream()
-            .map(architecture.preprocess)
-            .data_loader(
-                batch_size=config['batch_size'],
-                num_workers=config['n_workers'],
-                n_batches_per_epoch=config['n_batches_per_epoch'],
-                worker_init_fn=partial(worker_init, config['seed'], trainer_),
-            )
-        ),
-        max_epochs=config['max_epochs'],
-    )
 
 
 if __name__ == '__main__':
@@ -69,4 +42,4 @@ if __name__ == '__main__':
 
     json.write(config, 'config.json')
 
-    train_model(config)
+    train(config)

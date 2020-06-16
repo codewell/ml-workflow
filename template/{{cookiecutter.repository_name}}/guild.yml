@@ -14,8 +14,8 @@
       main: prepare
       flags-import: all
       output-scalars: off
-    search:
-      main: search
+    search_lr:
+      main: search_lr
       flags-import: all
       output-scalars: off
       requires:

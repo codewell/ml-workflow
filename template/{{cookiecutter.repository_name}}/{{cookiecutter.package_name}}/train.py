@@ -20,7 +20,7 @@ from datastream import Datastream
 from {{cookiecutter.package_name}} import data, architecture
 
 
-def trainer_setup(config):
+def train(config):
 
     set_seeds(config['seed'])
 
@@ -132,9 +132,42 @@ def trainer_setup(config):
         config,
     ).attach(trainer, evaluators)
 
-    return dict(
-        trainer=trainer,
-        evaluators=evaluators,
-        tensorboard_logger=tensorboard_logger,
-        optimizer=optimizer,
+    if config.get('search_learning_rate', False):
+
+        def search(config):
+            def search_(step, multiplier):
+                return (
+                    step,
+                    (1 / config['minimum_learning_rate']) ** (  step / (
+                        config['n_batches']
+                    ))
+                )
+            return search_
+
+        LearningRateScheduler(
+            optimizer,
+            search(config),
+        ).attach(trainer)
+
+    else:
+        LearningRateScheduler(
+            optimizer,
+            starcompose(
+                warmup(150),
+                cyclical(length=500),
+            ),
+        ).attach(trainer)
+
+    trainer.run(
+        data=(
+            data.GradientDatastream()
+            .map(architecture.preprocess)
+            .data_loader(
+                batch_size=config['batch_size'],
+                num_workers=config['n_workers'],
+                n_batches_per_epoch=config['n_batches_per_epoch'],
+                worker_init_fn=partial(worker_init, config['seed'], trainer),
+            )
+        ),
+        max_epochs=config['max_epochs'],
     )

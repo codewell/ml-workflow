@@ -10,45 +10,10 @@ from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
 
-from {{cookiecutter.package_name}} import data, architecture, trainer_setup
+from {{cookiecutter.package_name}} import data, architecture, train
 
 logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-
-def search(config):
-    def search_(step, multiplier):
-        return (
-            step,
-            (1 / config['learning_rate']) ** (  step / (
-                config['n_batches']
-            ))
-        )
-    return search_
-
-
-def search_learning_rate(config):
-    trainer_setup_ = trainer_setup(config)
-    trainer_ = trainer_setup_['trainer']
-
-    LearningRateScheduler(
-        trainer_setup_['optimizer'],
-        search(config),
-    ).attach(trainer_)
-
-    trainer_.run(
-        data=(
-            data.GradientDatastream()
-            .map(architecture.preprocess)
-            .data_loader(
-                batch_size=config['batch_size'],
-                num_workers=config['n_workers'],
-                n_batches_per_epoch=config['n_batches'],
-                worker_init_fn=partial(worker_init, config['seed'], trainer_),
-            )
-        ),
-        max_epochs=1,
-    )
 
 
 if __name__ == '__main__':
@@ -72,9 +37,12 @@ if __name__ == '__main__':
         seed=1,
         use_cuda=torch.cuda.is_available(),
         run_id=os.getenv('RUN_ID'),
+        search_learning_rate=True,
         learning_rate=config['minimum_learning_rate'],
+        max_epochs=1,
+        n_batches_per_epoch=config['n_batches'],
     )
 
     json.write(config, 'config.json')
 
-    search_learning_rate(config)
+    train(config)

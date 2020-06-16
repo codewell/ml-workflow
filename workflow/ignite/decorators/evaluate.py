@@ -6,9 +6,9 @@ from workflow.torch import model_device
 from workflow.ignite.decorators.to_device import to_device
 
 
-def detach(x):
-    if isinstance(x, torch.Tensor):
-        return x.detach()
+def cpu_detach(x):
+    if type(x) is torch.Tensor:
+        return x.detach().cpu()
     else:
         return x
 
@@ -24,7 +24,7 @@ def evaluate(model):
         def _process_batch(*args, **kwargs):
             model.eval()
             return structure_map(
-                detach,
+                cpu_detach,
                 process_batch(*args, **kwargs),
             )
         return _process_batch
