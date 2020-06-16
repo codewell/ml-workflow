@@ -31,7 +31,7 @@ from workflow.ignite.handlers import (
 )
 from datastream import Datastream
 
-from {{cookiecutter.package_name}} import data, architecture
+from {{cookiecutter.package_name}} import data, architecture, metrics
 
 logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -61,14 +61,6 @@ def evaluate(config):
         batch['predicted_class_name'] = model(batch['image'])
         batch['loss'] = loss(batch).item()
         return batch
-
-
-    def metrics():
-        return dict(
-            loss=ignite.metrics.Average(
-                lambda output: output['loss']
-            ),
-        )
 
 
     evaluate_data_loaders = {

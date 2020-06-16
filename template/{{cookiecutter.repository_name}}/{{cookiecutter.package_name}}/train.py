@@ -17,7 +17,7 @@ from workflow.ignite.handlers.learning_rate import (
 )
 from datastream import Datastream
 
-from {{cookiecutter.package_name}} import data, architecture
+from {{cookiecutter.package_name}} import data, architecture, metrics
 
 
 def train(config):
@@ -67,14 +67,6 @@ def train(config):
         batch['predicted_class_name'] = model(batch['image'])
         batch['loss'] = loss(batch).item()
         return batch
-
-
-    def metrics():
-        return dict(
-            loss=ignite.metrics.Average(
-                lambda output: output['loss']
-            ),
-        )
 
 
     train_metrics = dict(

@@ -2,4 +2,5 @@ from {{cookiecutter.package_name}} import problem
 from {{cookiecutter.package_name}} import data
 from {{cookiecutter.package_name}} import architecture
 
+from {{cookiecutter.package_name}}.metrics import metrics
 from {{cookiecutter.package_name}}.train import train
