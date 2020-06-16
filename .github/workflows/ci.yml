@@ -61,4 +61,4 @@ jobs:
 
     - name: Setup and run mnist template
       run: |
-        ./test_template.sh
+        ./test_template.sh ${{ matrix.python-version }}

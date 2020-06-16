@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+set -o errexit -o nounset -o pipefail -o xtrace
+
+VERSION=${1:-"3.8"}
 
 rm -rf test_template
 mkdir test_template
 cd test_template
-virtualenv venv -p python3.8
+virtualenv venv -p "python${VERSION}"
 source venv/bin/activate
 cd ..
 pip install .
