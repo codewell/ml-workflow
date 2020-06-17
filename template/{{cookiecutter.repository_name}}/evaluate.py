@@ -20,7 +20,7 @@ import workflow
 from workflow import json
 from workflow.functional import starcompose
 from workflow.torch import set_seeds
-from workflow.ignite import worker_init
+from workflow.ignite import worker_init, evaluator
 from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
@@ -77,27 +77,10 @@ def evaluate(config):
 
     tensorboard_logger = TensorboardLogger(log_dir='tb')
 
-    for evaluator_desc, data_loader in evaluate_data_loaders.items():
-        engine = Engine(evaluate_batch)
-
-        metrics_ = metrics()
-
-        for metric_name, metric in metrics_.items():
-            metric.attach(engine, metric_name)
-
-        evaluator_metric_names = list(metrics_.keys())
-
-        ProgressBar(desc=evaluator_desc).attach(engine)
-        MetricsLogger(evaluator_desc).attach(engine, evaluator_metric_names)
-        tensorboard_logger.attach(
-            engine,
-            OutputHandler(
-                tag=evaluator_desc,
-                metric_names=evaluator_metric_names,
-            ),
-            Events.EPOCH_COMPLETED,
+    for desciption, data_loader in evaluate_data_loaders.items():
+        engine = evaluator(
+            evaluate_batch, desciption, metrics(), tensorboard_logger
         )
-
         engine.run(data=data_loader)
 
 
