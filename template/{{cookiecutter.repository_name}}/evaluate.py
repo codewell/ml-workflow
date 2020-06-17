@@ -37,12 +37,6 @@ logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-def loss(batch):
-    return F.cross_entropy(
-        batch['predicted_logits'], batch['class_index'],
-    )
-
-
 def evaluate(config):
     device = torch.device('cuda' if config['use_cuda'] else 'cpu')
 
@@ -57,19 +51,23 @@ def evaluate(config):
 
 
     @workflow.ignite.decorators.evaluate(model)
-    def evaluate_batch(engine, batch):
-        batch['predicted_logits'] = model(batch['image'])
-        batch['loss'] = loss(batch).item()
-        return batch
+    def evaluate_batch(engine, examples):
+        predictions = model(tuple(example.image for example in examples))
+        loss = predictions.loss(tuple(example.class_name for example in examples))
+        return dict(
+            examples=examples,
+            predictions=predictions,
+            loss=loss,
+        )
 
 
     evaluate_data_loaders = {
         f'evaluate_{name}': (
             Datastream(dataset)
-            .map(architecture.preprocess)
             .data_loader(
                 batch_size=config['eval_batch_size'],
                 num_workers=config['n_workers'],
+                collate_fn=tuple,
             )
         )
         for name, dataset in data.datasets().items()

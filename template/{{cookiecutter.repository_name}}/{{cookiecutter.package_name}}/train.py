@@ -47,26 +47,27 @@ def train(config):
     print(f'n_parameters: {n_parameters:,}')
 
 
-    def loss(batch):
-        return F.cross_entropy(
-            batch['predicted_logits'], batch['class_index'],
+    @workflow.ignite.decorators.train(model, optimizer)
+    def train_batch(engine, examples):
+        predictions = model(tuple(example.image for example in examples))
+        loss = predictions.loss(tuple(example.class_name for example in examples))
+        loss.backward()
+        return dict(
+            examples=examples,
+            predictions=predictions,
+            loss=loss,
         )
 
 
-    @workflow.ignite.decorators.train(model, optimizer)
-    def train_batch(engine, batch):
-        batch['predicted_logits'] = model(batch['image'])
-        loss_ = loss(batch)
-        loss_.backward()
-        batch['loss'] = loss_.item()
-        return batch
-
-
     @workflow.ignite.decorators.evaluate(model)
-    def evaluate_batch(engine, batch):
-        batch['predicted_logits'] = model(batch['image'])
-        batch['loss'] = loss(batch).item()
-        return batch
+    def evaluate_batch(engine, examples):
+        predictions = model(tuple(example.image for example in examples))
+        loss = predictions.loss(tuple(example.class_name for example in examples))
+        return dict(
+            examples=examples,
+            predictions=predictions,
+            loss=loss,
+        )
 
 
     train_metrics = dict(
@@ -87,10 +88,10 @@ def train(config):
     evaluate_data_loaders = {
         f'evaluate_{name}': (
             Datastream(dataset)
-            .map(architecture.preprocess)
             .data_loader(
                 batch_size=config['eval_batch_size'],
                 num_workers=config['n_workers'],
+                collate_fn=tuple,
             )
         )
         for name, dataset in data.datasets().items()
@@ -156,12 +157,12 @@ def train(config):
     trainer.run(
         data=(
             data.GradientDatastream()
-            .map(architecture.preprocess)
             .data_loader(
                 batch_size=config['batch_size'],
                 num_workers=config['n_workers'],
                 n_batches_per_epoch=config['n_batches_per_epoch'],
                 worker_init_fn=partial(worker_init, config['seed'], trainer),
+                collate_fn=tuple,
             )
         ),
         max_epochs=config['max_epochs'],

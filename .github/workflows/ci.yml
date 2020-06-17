@@ -59,6 +59,10 @@ jobs:
         flake8 workflow --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         deactivate
 
-    - name: Setup and run mnist template
+    - name: Setup mnist template
       run: |
-        ./test_template.sh ${{ matrix.python-version }}
+        ./setup_template.sh ${{ matrix.python-version }}
+
+    - name: Run mnist template
+      run: |
+        ./test_template.sh
