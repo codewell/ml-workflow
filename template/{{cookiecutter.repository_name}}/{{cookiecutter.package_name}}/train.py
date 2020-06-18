@@ -54,7 +54,7 @@ def train(config):
         loss.backward()
         return dict(
             examples=examples,
-            predictions=predictions,
+            predictions=predictions.release(),
             loss=loss,
         )
 
@@ -65,7 +65,7 @@ def train(config):
         loss = predictions.loss(tuple(example.class_name for example in examples))
         return dict(
             examples=examples,
-            predictions=predictions,
+            predictions=predictions.release(),
             loss=loss,
         )
 

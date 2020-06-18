@@ -61,3 +61,10 @@ class PredictionBatch(BaseModel):
             [class_index(class_name) for class_name in class_names],
         ).to(self.logits).long()
         return F.cross_entropy(self.logits, targets)
+
+    def release(self):
+        return PredictionBatch(
+            logits=self.logits.detach().cpu(),
+            preprocessed=self.preprocessed.detach().cpu(),
+            images=self.images,
+        )
