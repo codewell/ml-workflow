@@ -123,6 +123,21 @@ def train(config):
         config,
     ).attach(trainer, evaluators)
 
+    def log_examples(engine, logger, event_name):
+        n_examples = 5
+        indices = np.random.choice(config['batch_size'], n_examples, replace=False)
+        logger.writer.add_images(
+            'train/predicted_mask',
+            np.expand_dims(np.stack([
+                np.array(engine.state.output['predictions'][index].prediction_image()) / 255
+                for index in indices
+            ]), -1),
+            trainer.state.epoch,
+            dataformats='NHWC',
+        )
+    
+    tensorboard_logger.attach(trainer, log_examples, ignite.engine.Events.EPOCH_COMPLETED)
+
     if config.get('search_learning_rate', False):
 
         def search(config):

@@ -1,5 +1,5 @@
 from itertools import product
-from PIL import Image, ImageFont
+from PIL import Image, ImageFont, ImageDraw
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -7,6 +7,15 @@ from pydantic import BaseModel
 from typing import Tuple
 
 from {{cookiecutter.package_name}} import problem
+
+
+def text_(draw, text, x, y, fill='black', outline='white', size=12):
+    font = ImageFont.load_default()
+
+    for x_shift, y_shift in product([-1, 0, 1], [-1, 0, 1]):
+        draw.text((x + x_shift, y + y_shift), text, font=font, fill=outline)
+
+    draw.text((x, y), text, font=font, fill=fill)
 
 
 def class_index(class_name):
@@ -25,15 +34,27 @@ class Prediction(BaseModel):
         return problem.settings.CLASS_NAMES[self.logits.argmax()]
 
     def image(self):
-        return Image.fromarray(np.uint8((preprocessed + 1) / 2 * 255))
+        return Image.fromarray(np.uint8(
+            (self.preprocessed.squeeze(0).cpu().numpy() + 1) / 2 * 255
+        ))
 
-    def annotated_image(self):
-        # TODO: add prediction
-        return self.image()
+    def prediction_image(self):
+        image = self.image().copy().resize((256, 256))
+
+        probabilities = dict(zip(
+            problem.settings.CLASS_NAMES,
+            self.logits.sigmoid().detach().cpu().numpy(),
+        ))
+
+        draw = ImageDraw.Draw(image)
+        for index, (class_name, probability) in enumerate(probabilities.items()):
+            text_(draw, f'{class_name}: {probability:.2f}', 10, 5 + 10 * index)
+        return image
+
 
     @property
     def _repr_png_(self):
-        return self.annotated_image()._repr_png_
+        return self.prediction_image()._repr_png_
 
 
 class PredictionBatch(BaseModel):
