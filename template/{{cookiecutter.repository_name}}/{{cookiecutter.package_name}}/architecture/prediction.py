@@ -16,7 +16,6 @@ def class_index(class_name):
 class Prediction(BaseModel):
     logits: torch.Tensor
     preprocessed: torch.Tensor
-    image: Image.Image
 
     class Config:
         arbitrary_types_allowed = True
@@ -25,8 +24,12 @@ class Prediction(BaseModel):
     def class_name(self):
         return problem.settings.CLASS_NAMES[self.logits.argmax()]
 
+    def image(self):
+        return Image.fromarray(np.uint8((preprocessed + 1) / 2 * 255))
+
     def annotated_image(self):
-        return self.example.annotated_image()
+        # TODO: add prediction
+        return self.image()
 
     @property
     def _repr_png_(self):
@@ -36,7 +39,6 @@ class Prediction(BaseModel):
 class PredictionBatch(BaseModel):
     logits: torch.Tensor
     preprocessed: torch.Tensor
-    images: Tuple[Image.Image, ...]
 
     class Config:
         arbitrary_types_allowed = True
@@ -49,7 +51,6 @@ class PredictionBatch(BaseModel):
         return Prediction(
             logits=self.logits[index],
             preprocessed=self.preprocessed[index],
-            image=self.images[index],
         )
 
     def __iter__(self):
@@ -62,9 +63,14 @@ class PredictionBatch(BaseModel):
         ).to(self.logits).long()
         return F.cross_entropy(self.logits, targets)
 
-    def release(self):
+    def cpu(self):
         return PredictionBatch(
-            logits=self.logits.detach().cpu(),
-            preprocessed=self.preprocessed.detach().cpu(),
-            images=self.images,
+            logits=self.logits.cpu(),
+            preprocessed=self.preprocessed.cpu(),
+        )
+
+    def detach(self):
+        return PredictionBatch(
+            logits=self.logits.detach(),
+            preprocessed=self.preprocessed.detach(),
         )

@@ -8,7 +8,7 @@ from workflow.torch import ModuleCompose, model_device
 from {{cookiecutter.package_name}} import problem, architecture
 
 
-class SimpleModel(nn.Module):
+class Model(nn.Module):
     def __init__(self):
         super().__init__()
         self.core = ModuleCompose(
@@ -30,7 +30,7 @@ class SimpleModel(nn.Module):
         return (
             torch.tensor(
                 np.stack([
-                    np.array(image, dtype=np.float32)
+                    np.array(image, dtype=np.float32) / 255 * 2 - 1
                     for image in images
                 ]),
                 dtype=torch.float32,
@@ -39,11 +39,13 @@ class SimpleModel(nn.Module):
             .to(model_device(self))
         )
 
-    def forward(self, images):
-        preprocessed = self.preprocessed(images)
+    def forward(self, preprocessed):
         return architecture.PredictionBatch(
             logits=self.core(preprocessed),
             preprocessed=preprocessed,
-            images=images,
         )
-    
+
+    def predicted(self, images):
+        return self.forward(
+            self.preprocessed(images)
+        )

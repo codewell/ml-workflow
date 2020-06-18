@@ -40,7 +40,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 def evaluate(config):
     device = torch.device('cuda' if config['use_cuda'] else 'cpu')
 
-    model = architecture.SimpleModel().to(device)
+    model = architecture.Model().to(device)
 
     train_state = dict(model=model)
 
@@ -52,11 +52,11 @@ def evaluate(config):
 
     @workflow.ignite.decorators.evaluate(model)
     def evaluate_batch(engine, examples):
-        predictions = model(tuple(example.image for example in examples))
+        predictions = model.predicted(tuple(example.image for example in examples))
         loss = predictions.loss(tuple(example.class_name for example in examples))
         return dict(
             examples=examples,
-            predictions=predictions.release(),
+            predictions=predictions.cpu().detach(),
             loss=loss,
         )
 

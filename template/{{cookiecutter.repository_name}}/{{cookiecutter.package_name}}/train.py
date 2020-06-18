@@ -26,7 +26,7 @@ def train(config):
 
     device = torch.device('cuda' if config['use_cuda'] else 'cpu')
 
-    model = architecture.SimpleModel().to(device)
+    model = architecture.Model().to(device)
     optimizer = torch.optim.Adam(
         model.parameters(), lr=config['learning_rate']
     )
@@ -49,23 +49,23 @@ def train(config):
 
     @workflow.ignite.decorators.train(model, optimizer)
     def train_batch(engine, examples):
-        predictions = model(tuple(example.image for example in examples))
+        predictions = model.predicted(tuple(example.image for example in examples))
         loss = predictions.loss(tuple(example.class_name for example in examples))
         loss.backward()
         return dict(
             examples=examples,
-            predictions=predictions.release(),
+            predictions=predictions.cpu().detach(),
             loss=loss,
         )
 
 
     @workflow.ignite.decorators.evaluate(model)
     def evaluate_batch(engine, examples):
-        predictions = model(tuple(example.image for example in examples))
+        predictions = model.predicted(tuple(example.image for example in examples))
         loss = predictions.loss(tuple(example.class_name for example in examples))
         return dict(
             examples=examples,
-            predictions=predictions.release(),
+            predictions=predictions.cpu().detach(),
             loss=loss,
         )
 
