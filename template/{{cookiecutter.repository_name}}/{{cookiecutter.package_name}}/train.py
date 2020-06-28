@@ -112,7 +112,7 @@ def train(config):
     )
 
     workflow.ignite.handlers.ModelScore(
-        lambda: evaluators['evaluate_early_stopping'].state.metrics['loss'],
+        lambda: -evaluators['evaluate_early_stopping'].state.metrics['loss'],
         train_state,
         {
             name: metrics()
