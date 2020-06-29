@@ -42,28 +42,66 @@ class ModuleCompose(nn.Module):
                 module, fn = module_or_function
 
                 if isinstance(module, nn.Module):
-                    n_parameters = sum([p.shape.numel() for p in module.parameters()])
+                    n_parameters = sum(
+                        [p.shape.numel() for p in module.parameters()]
+                    )
                     n_parameters_postfix = f' n_parameters: {n_parameters}'
                 else:
                     n_parameters_postfix = ''
 
+                print_intermediate(index, x, n_parameters_postfix)
                 if type(x) is tuple:
-                    print(f'index: {index}, shape: {[y.shape for y in x]}' + n_parameters_postfix)
                     x = fn(module, *x)
                 else:
-                    print(f'index: {index}, shape: {x.shape}' + n_parameters_postfix)
                     x = fn(module, x)
             else:
                 if isinstance(module_or_function, nn.Module):
-                    n_parameters = sum([p.shape.numel() for p in module_or_function.parameters()])
+                    n_parameters = sum([
+                        p.shape.numel()
+                        for p in module_or_function.parameters()
+                    ])
                     n_parameters_postfix = f' n_parameters: {n_parameters}'
                 else:
                     n_parameters_postfix = ''
 
+                print_intermediate(index, x, n_parameters_postfix)
                 if type(x) is tuple:
-                    print(f'index: {index}, shape: {[y.shape for y in x]}' + n_parameters_postfix)
                     x = module_or_function(*x)
                 else:
-                    print(f'index: {index}, shape: {x.shape}' + n_parameters_postfix)
                     x = module_or_function(x)
         return x
+
+
+def print_intermediate(index, x, postfix):
+    if type(x) is tuple:
+        if hasattr(x[0], 'shape'):
+            representation = f'shape: {[y.shape for y in x]}'
+        else:
+            representation = f'type: {[type(y) for y in x]}'
+    else:
+        if hasattr(x, 'shape'):
+            representation = f'shape: {x.shape}'
+        else:
+            representation = f'type: {type(x)}'
+    print(f'index: {index}, {representation}' + postfix)
+
+
+def test_module_compose():
+    import numpy as np
+
+    class Example:
+        def __init__(self, data):
+            self.data = data
+
+    model = ModuleCompose(
+        lambda examples: torch.stack([
+            torch.from_numpy(example.data).float() for example in examples
+        ]),
+        nn.Conv2d(3, 32, 5),
+        lambda x: x.mean(dim=(-1, -2)),
+        lambda x: x.view(x.size(0), -1),
+        nn.Linear(32, 1),
+    )
+
+    batch = [Example(np.random.randn(3, 32, 32)) for i in range(8)]
+    model.debug(batch)
