@@ -17,7 +17,7 @@ from workflow.ignite.handlers.learning_rate import (
 )
 from datastream import Datastream
 
-from {{cookiecutter.package_name}} import data, architecture, metrics
+from {{cookiecutter.package_name}} import datastream, architecture, metrics
 
 
 def train(config):
@@ -86,15 +86,12 @@ def train(config):
     )
 
     evaluate_data_loaders = {
-        f'evaluate_{name}': (
-            Datastream(dataset)
-            .data_loader(
-                batch_size=config['eval_batch_size'],
-                num_workers=config['n_workers'],
-                collate_fn=tuple,
-            )
+        f'evaluate_{name}': datastream.data_loader(
+            batch_size=config['eval_batch_size'],
+            num_workers=config['n_workers'],
+            collate_fn=tuple,
         )
-        for name, dataset in data.datasets().items()
+        for name, datastream in datastream.evaluate_datastreams().items()
     }
 
     trainer, evaluators, tensorboard_logger = workflow.ignite.trainer(
@@ -126,7 +123,11 @@ def train(config):
     def log_examples(tag):
         def log_examples_(engine, logger, event_name):
             n_examples = 5
-            indices = np.random.choice(config['batch_size'], n_examples, replace=False)
+            indices = np.random.choice(
+                len(engine.state.output['predictions']),
+                n_examples,
+                replace=False,
+            )
             logger.writer.add_images(
                 f'{tag}/predictions',
                 np.expand_dims(np.stack([
@@ -181,7 +182,7 @@ def train(config):
 
     trainer.run(
         data=(
-            data.GradientDatastream()
+            datastream.GradientDatastream()
             .data_loader(
                 batch_size=config['batch_size'],
                 num_workers=config['n_workers'],

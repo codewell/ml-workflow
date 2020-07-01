@@ -1,12 +1,14 @@
 import numpy as np
 from datastream import Datastream
 
-from {{cookiecutter.package_name}}.data import datasets, augmenter
+from {{cookiecutter.package_name}}.datastream import (
+    evaluate_datastreams, augmenter
+)
 from {{cookiecutter.package_name}}.problem import settings
 
 
 def GradientDatastream():
-    dataset = datasets()['gradient']
+    dataset = evaluate_datastreams()['gradient'].dataset
     
     augmenter_ = augmenter()
     return (

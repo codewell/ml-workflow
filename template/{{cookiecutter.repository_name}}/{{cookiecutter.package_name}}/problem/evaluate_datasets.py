@@ -20,7 +20,9 @@ def MnistDataset(dataframe):
     )
 
 
-def datasets():
+def evaluate_datasets():
+    # TODO: consider showing the standard case where there is no
+    # predetermined split
     train_df = pd.read_csv('prepare' / problem.settings.TRAIN_CSV)
     test_df = pd.read_csv('prepare' / problem.settings.TEST_CSV)
 

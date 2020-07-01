@@ -10,7 +10,7 @@ from workflow.ignite.handlers.learning_rate import (
     LearningRateScheduler, warmup, cyclical
 )
 
-from {{cookiecutter.package_name}} import data, architecture, train
+from {{cookiecutter.package_name}} import train
 
 logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

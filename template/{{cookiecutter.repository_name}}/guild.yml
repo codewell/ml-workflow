@@ -20,14 +20,14 @@
       output-scalars: off
       requires:
         - prepare
-        - train_split
+        - splits
     train:
       main: train
       flags-import: all
       output-scalars: off
       requires:
         - prepare
-        - train_split
+        - splits
     retrain:
       main: train
       flags-import: all
@@ -35,7 +35,7 @@
       requires:
         - model
         - prepare
-        - train_split
+        - splits
     evaluate:
       main: evaluate
       flags-import: all
@@ -43,7 +43,7 @@
       requires:
         - model
         - prepare
-        - train_split
+        - splits
   resources:
     model:
       name: model
@@ -55,7 +55,6 @@
       path: prepare
       sources:
         - operation: prepare
-    train_split:
-      path: {{cookiecutter.package_name}}/data
+    splits:
       sources:
-        - {{cookiecutter.package_name}}/data
+        - {{cookiecutter.package_name}}/splits

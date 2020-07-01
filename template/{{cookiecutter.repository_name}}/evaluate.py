@@ -31,7 +31,7 @@ from workflow.ignite.handlers import (
 )
 from datastream import Datastream
 
-from {{cookiecutter.package_name}} import data, architecture, metrics
+from {{cookiecutter.package_name}} import datastream, architecture, metrics
 
 logging.getLogger('ignite').setLevel(logging.WARNING)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -62,15 +62,12 @@ def evaluate(config):
 
 
     evaluate_data_loaders = {
-        f'evaluate_{name}': (
-            Datastream(dataset)
-            .data_loader(
-                batch_size=config['eval_batch_size'],
-                num_workers=config['n_workers'],
-                collate_fn=tuple,
-            )
+        f'evaluate_{name}': datastream.data_loader(
+            batch_size=config['eval_batch_size'],
+            num_workers=config['n_workers'],
+            collate_fn=tuple,
         )
-        for name, dataset in data.datasets().items()
+        for name, datastream in datastream.evaluate_datastreams().items()
     }
 
     tensorboard_logger = TensorboardLogger(log_dir='tb')
