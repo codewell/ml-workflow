@@ -3,6 +3,7 @@ from functools import wraps
 
 
 def temporary_numpy_seed(seed):
+    '''Function decorator that sets a temporary numpy seed during execution'''
     def decorator(fn):
         @wraps(fn)
         def seeded_function(*args, **kwargs):

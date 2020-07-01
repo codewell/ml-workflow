@@ -123,20 +123,31 @@ def train(config):
         config,
     ).attach(trainer, evaluators)
 
-    def log_examples(engine, logger, event_name):
-        n_examples = 5
-        indices = np.random.choice(config['batch_size'], n_examples, replace=False)
-        logger.writer.add_images(
-            'train/predicted_mask',
-            np.expand_dims(np.stack([
-                np.array(engine.state.output['predictions'][index].prediction_image()) / 255
-                for index in indices
-            ]), -1),
-            trainer.state.epoch,
-            dataformats='NHWC',
-        )
+    def log_examples(tag):
+        def log_examples_(engine, logger, event_name):
+            n_examples = 5
+            indices = np.random.choice(config['batch_size'], n_examples, replace=False)
+            logger.writer.add_images(
+                f'{tag}/predictions',
+                np.expand_dims(np.stack([
+                    np.array(engine.state.output['predictions'][index].representation()) / 255
+                    for index in indices
+                ]), -1),
+                trainer.state.epoch,
+                dataformats='NHWC',
+            )
+        return log_examples_
     
-    tensorboard_logger.attach(trainer, log_examples, ignite.engine.Events.EPOCH_COMPLETED)
+    tensorboard_logger.attach(
+        trainer,
+        log_examples('train'),
+        ignite.engine.Events.EPOCH_COMPLETED,
+    )
+    tensorboard_logger.attach(
+        evaluators['evaluate_compare'],
+        log_examples('evaluate_compare'),
+        ignite.engine.Events.EPOCH_COMPLETED,
+    )
 
     if config.get('search_learning_rate', False):
 
@@ -144,9 +155,8 @@ def train(config):
             def search_(step, multiplier):
                 return (
                     step,
-                    (1 / config['minimum_learning_rate']) ** (  step / (
-                        config['n_batches']
-                    ))
+                    (1 / config['minimum_learning_rate'])
+                    ** (step / config['n_batches'])
                 )
             return search_
 

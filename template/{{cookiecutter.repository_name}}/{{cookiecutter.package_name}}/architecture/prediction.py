@@ -38,7 +38,7 @@ class Prediction(BaseModel):
             (self.preprocessed.squeeze(0).cpu().numpy() + 1) / 2 * 255
         ))
 
-    def prediction_image(self):
+    def representation(self):
         image = self.image().copy().resize((256, 256))
 
         probabilities = dict(zip(
@@ -51,10 +51,9 @@ class Prediction(BaseModel):
             text_(draw, f'{class_name}: {probability:.2f}', 10, 5 + 10 * index)
         return image
 
-
     @property
     def _repr_png_(self):
-        return self.prediction_image()._repr_png_
+        return self.representation()._repr_png_
 
 
 class PredictionBatch(BaseModel):

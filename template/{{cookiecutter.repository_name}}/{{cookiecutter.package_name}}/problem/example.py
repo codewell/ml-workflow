@@ -21,7 +21,7 @@ class Example(BaseModel):
         arbitrary_types_allowed = True
         allow_mutation = False
 
-    def annotated_image(self):
+    def representation(self):
         image = self.image.copy()
         draw = ImageDraw.Draw(image)
         text_(draw, self.class_name, 10, 10)
@@ -29,7 +29,7 @@ class Example(BaseModel):
 
     @property
     def _repr_png_(self):
-        return self.annotated_image()._repr_png_
+        return self.representation()._repr_png_
 
     def augment(self, augmenter):
         image = Image.fromarray(

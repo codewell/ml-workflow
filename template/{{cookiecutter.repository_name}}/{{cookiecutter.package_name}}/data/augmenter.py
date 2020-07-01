@@ -9,7 +9,6 @@ def _augment_geometric(
     d_shear_y=1,
 ):
     return iaa.Sequential([
-        iaa.HorizontalFlip(0.5),
         iaa.Sometimes(0.5, iaa.Affine(
             scale=(1 / (1 + d_scale), (1 + d_scale)),
             translate_percent=dict(

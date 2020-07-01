@@ -4,11 +4,12 @@ efficiently as possible. This is subject to change as we iterate and improve.
 This package implements tools that add missing features or help bridge the gap
 between frameworks and tools that we utilize.
 
-The main packages that we build around are:
+The main packages and tools that we build around are:
 
 - pytorch
 - ignite
 - pytorch-datastream
+- guild
 
 ## Install in existing project
 
