@@ -74,7 +74,7 @@ def evaluate(config):
 
     for desciption, data_loader in evaluate_data_loaders.items():
         engine = evaluator(
-            evaluate_batch, desciption, metrics(), tensorboard_logger
+            evaluate_batch, desciption, metrics.evaluate_metrics(), tensorboard_logger
         )
         engine.run(data=data_loader)
 

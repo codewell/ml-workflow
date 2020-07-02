@@ -69,22 +69,6 @@ def train(config):
             loss=loss,
         )
 
-
-    train_metrics = dict(
-        loss=ignite.metrics.RunningAverage(
-            output_transform=lambda output: output['loss'],
-            epoch_bound=False,
-        ),
-    )
-
-    progress_metrics = dict(
-        batch_loss=ignite.metrics.RunningAverage(
-            output_transform=lambda output: output['loss'],
-            epoch_bound=False,
-            alpha=1e-7,
-        ),
-    )
-
     evaluate_data_loaders = {
         f'evaluate_{name}': datastream.data_loader(
             batch_size=config['eval_batch_size'],
@@ -99,10 +83,10 @@ def train(config):
         evaluate_batch,
         evaluate_data_loaders,
         metrics=dict(
-            progress=progress_metrics,
-            train=train_metrics,
+            progress=metrics.progress_metrics(),
+            train=metrics.train_metrics(),
             **{
-                name: metrics()
+                name: metrics.evaluate_metrics()
                 for name in evaluate_data_loaders.keys()
             }
         ),
@@ -113,7 +97,7 @@ def train(config):
         lambda: -evaluators['evaluate_early_stopping'].state.metrics['loss'],
         train_state,
         {
-            name: metrics()
+            name: metrics.evaluate_metrics()
             for name in evaluate_data_loaders.keys()
         },
         tensorboard_logger,
