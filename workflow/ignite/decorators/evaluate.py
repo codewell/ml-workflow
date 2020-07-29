@@ -2,7 +2,7 @@ import torch
 from functools import wraps
 
 from workflow.functional import structure_map
-from workflow.torch import model_device
+from workflow.torch import module_device
 from workflow.ignite.decorators.to_device import to_device
 
 
@@ -14,7 +14,7 @@ def cpu_detach(x):
 
 
 def evaluate(model):
-    device = model_device(model)
+    device = module_device(model)
 
     def decorator(process_batch):
         

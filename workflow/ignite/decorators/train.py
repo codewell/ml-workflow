@@ -2,7 +2,7 @@ import torch
 from functools import wraps
 
 from workflow.functional import structure_map
-from workflow.torch import model_device
+from workflow.torch import module_device
 from workflow.ignite.decorators import (
     to_device, step
 )
@@ -16,7 +16,7 @@ def cpu_detach(x):
 
 
 def train(model, optimizer, n_batches_per_step=1):
-    device = model_device(model)
+    device = module_device(model)
 
     def decorator(process_batch):
 
