@@ -29,7 +29,7 @@ class MetricsLogger:
                         tqdm.write(f'  {metric_name}:')
                         tqdm.write(str(value))
                     elif is_float(value):
-                        if abs(value) > 1e-4 and value != 0:
+                        if abs(value) > 1e-4 or value == 0:
                             tqdm.write(
                                 f'  {metric_name}:{padding} {value:.4f}'
                             )
