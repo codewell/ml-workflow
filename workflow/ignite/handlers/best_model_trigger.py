@@ -1,5 +1,5 @@
 from enum import Enum
-from ignite.engine.engine import CallableEvents
+from ignite.engine.events import CallableEvents
 from ignite.engine import Events
 import numpy as np
 

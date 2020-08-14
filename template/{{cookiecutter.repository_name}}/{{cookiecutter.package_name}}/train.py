@@ -159,11 +159,6 @@ def train(config):
             ),
         ).attach(trainer)
 
-    # Avoid ReproducibleBatchSampler. Should be fixed in ignite==0.4.0
-    ignite.engine.engine.ReproducibleBatchSampler.__iter__ = (
-        lambda self: iter(self.batch_sampler)
-    )
-
     trainer.run(
         data=(
             datastream.GradientDatastream()
