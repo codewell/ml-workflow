@@ -49,7 +49,7 @@ class ModelCheckpoint:
             suffix = suffixes[np.argmax([float(s.split('_')[-1]) for s in suffixes])]
 
         saved_checkpoint_state = torch.load(
-            f'{dirname}/{ModelCheckpoint.filename_prefix}_checkpoint_{suffix}.pth',
+            f'{dirname}/{ModelCheckpoint.filename_prefix}_checkpoint_{suffix}.pt',
             map_location=device,
         )
 
