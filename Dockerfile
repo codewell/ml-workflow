@@ -2,6 +2,8 @@ FROM python:3.8
 
 WORKDIR /usr/src/ml-workflow
 
+RUN apt-get update -y
+RUN apt-get install -y libgl1-mesa-glx
 RUN pip install --no-cache-dir --pre guildai
 
 COPY pytest.ini ./
