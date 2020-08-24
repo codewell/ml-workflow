@@ -20,6 +20,20 @@ class ModuleCompose(nn.Module):
             )
         ])
 
+        self.parameter_list = nn.ParameterList([
+            parameter
+            for parameter in self.modules_and_functions
+            if isinstance(parameter, nn.Parameter)
+        ] + [
+            parameter_or_tuple[0]
+            for parameter_or_tuple in self.modules_and_functions
+            if (
+                type(parameter_or_tuple) is tuple and
+                isinstance(parameter_or_tuple[0], nn.Parameter)
+            )
+        ])
+
+
     def forward(self, *x):
         for module_or_function in self.modules_and_functions:
             if type(module_or_function) is tuple:
