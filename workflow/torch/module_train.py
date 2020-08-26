@@ -1,20 +1,26 @@
-from contextlib import contextmanager
-from functools import partial
+from functools import wraps, partial
 
 
-@contextmanager
-def module_train(module, training=True):
-    '''
-    Usage:
-    with module_train(model):
-        prediction = model(features)
-    '''
-    was_training = module.training
+class ModuleTrain:
+    '''Can be used as a decorator or context manager'''
+    def __init__(self, module, training=True):
+        self.module = module
+        self.training = training
+        self.was_training = module.training
 
-    module.train(training)
-    yield module
+    def __enter__(self):
+        self.module.train(self.training)
+        return self.module
 
-    module.train(was_training)
+    def __exit__(self, type, value, traceback):
+        self.module.train(self.was_training)
 
-
-module_eval = partial(module_train, training=False)
+    def __call__(self, fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            with ModuleTrain(self.module):
+                return fn(*args, **kwargs)
+        return wrapper
+        
+module_train = ModuleTrain
+module_eval = partial(ModuleTrain, training=False)

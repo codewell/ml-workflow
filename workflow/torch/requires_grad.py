@@ -1,29 +1,32 @@
-from contextlib import contextmanager
+from functools import wraps, partial
 
 
-@contextmanager
-def requires_grad(module, grad=True):
-    '''
-    Usage:
-    with requires_grad(model):
-        prediction = model(features)
-    '''
-    requires_grads = [
-        p.requires_grad for p in module.parameters()
-    ]
-    for p in module.parameters():
-        p.requires_grad = grad
+class RequiresGrad:
+    '''Can be used as a decorator or context manager'''
+    def __init__(self, module, grad=True):
+        self.module = module
+        self.grad = grad
+        self.requires_grads = [
+            p.requires_grad for p in module.parameters()
+        ]
 
-    yield module
+    def __enter__(self):
+        for p in self.module.parameters():
+            p.requires_grad = self.grad
+        return self.module
 
-    for p, requires_grad in zip(module.parameters(), requires_grads):
-        p.requires_grad = requires_grad
+    def __exit__(self, type, value, traceback):
+        for p, requires_grad in zip(
+            self.module.parameters(), self.requires_grads
+        ):
+            p.requires_grad = requires_grad
 
+    def __call__(self, fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            with RequiresGrad(self.module):
+                return fn(*args, **kwargs)
+        return wrapper
 
-def requires_nograd(module):
-    '''
-    Usage:
-    with requires_nograd(model):
-        prediction = model(features)
-    '''
-    return requires_grad(module, grad=False)
+requires_grad = RequiresGrad
+requires_nograd = partial(RequiresGrad, grad=False)
