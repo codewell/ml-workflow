@@ -34,3 +34,72 @@ class RequiresGrad:
 
 requires_grad = RequiresGrad
 requires_nograd = partial(RequiresGrad, grad=False)
+
+
+def test_requires_grad():
+    import torch.nn as nn
+
+    class A(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = nn.Linear(1, 1)
+
+            for param in self.parameters():
+                param.requires_grad = False
+
+        def forward(self, x):
+            return self.a(x)
+
+    model = A()
+    assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+
+    with requires_grad(model):
+        assert(all(map(lambda x: x.requires_grad, model.parameters())))
+    assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+
+
+def test_nested():
+    import torch.nn as nn
+
+    class Inner(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = nn.Linear(1, 1)
+
+        def forward(self, x):
+            return self.a(x)
+
+    class Outer(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = nn.Linear(1, 1)
+            self.inner = Inner()
+
+            for param in self.parameters():
+                param.requires_grad = False
+
+        def forward(self, x):
+            return self.a(x)
+
+    model = Outer()
+    assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+
+    with requires_grad(model):
+        with requires_nograd(model):
+            assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+        assert(all(map(lambda x: x.requires_grad, model.parameters())))
+    assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+
+    with requires_grad(model):
+        with requires_nograd(model.inner):
+            assert(all(map(lambda x: not x.requires_grad, model.inner.parameters())))
+        assert(all(map(lambda x: x.requires_grad, model.parameters())))
+    assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+
+    with requires_grad(model.inner):
+        assert(all(map(lambda x: x.requires_grad, model.inner.parameters())))
+        assert(any(map(lambda x: not x.requires_grad, model.parameters())))
+        with requires_nograd(model):
+            assert(all(map(lambda x: not x.requires_grad, model.parameters())))
+        assert(all(map(lambda x: x.requires_grad, model.inner.parameters())))
+    assert(all(map(lambda x: not x.requires_grad, model.parameters())))
