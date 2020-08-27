@@ -4,6 +4,9 @@ from functools import wraps, partial
 class RequiresGrad:
     '''Can be used as a decorator or context manager'''
     def __init__(self, module, grad=True):
+        if type(grad) is not bool:
+            raise TypeError('Input argument "grad" must be bool')
+
         self.module = module
         self.grad = grad
         self.requires_grads = [
