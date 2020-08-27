@@ -46,6 +46,7 @@ You can train a model and inspect the training with:
     virtualenv venv --python python3.8
     source venv/bin/activate
     pip install -r requirements.txt
+    pip install pytest
     python -m pytest
 
 ### Use development version in project
