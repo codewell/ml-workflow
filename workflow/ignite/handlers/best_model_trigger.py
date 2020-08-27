@@ -1,10 +1,12 @@
 from enum import Enum
-from ignite.engine.events import CallableEvents
-from ignite.engine import Events
+from ignite.engine import (
+    Events,
+    EventEnum,
+)
 import numpy as np
 
 
-class CustomEvents(CallableEvents, Enum):
+class CustomEvents(EventEnum):
     NEW_BEST_MODEL = 'new_best_model'
 
 

@@ -45,7 +45,7 @@ publish () {
     git tag -l | sed '/^'"${VERSION_TAG}"'$/{q2}' > /dev/null \
         || (echo "${VERSION_TAG} already exists"; exit 4)
 
-    python -m pytest
+    python -m pytest -Werror
 
     git diff origin/master
 
