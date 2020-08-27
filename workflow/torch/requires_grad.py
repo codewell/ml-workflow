@@ -27,9 +27,10 @@ class RequiresGrad:
     def __call__(self, fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            with RequiresGrad(self.module):
+            with RequiresGrad(self.module, self.grad):
                 return fn(*args, **kwargs)
         return wrapper
+
 
 requires_grad = RequiresGrad
 requires_nograd = partial(RequiresGrad, grad=False)

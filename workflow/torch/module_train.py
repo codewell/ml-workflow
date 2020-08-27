@@ -18,9 +18,10 @@ class ModuleTrain:
     def __call__(self, fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            with ModuleTrain(self.module):
+            with ModuleTrain(self.module, self.training):
                 return fn(*args, **kwargs)
         return wrapper
-        
+
+
 module_train = ModuleTrain
 module_eval = partial(ModuleTrain, training=False)
