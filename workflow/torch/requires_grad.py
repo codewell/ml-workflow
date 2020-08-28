@@ -9,9 +9,10 @@ class RequiresGrad:
 
         self.module = module
         self.grad = grad
-        self.named_requires_grads = {name: parameter.requires_grad for name, parameter in self.module.named_parameters()}
 
     def __enter__(self):
+        self.named_requires_grads = {name: parameter.requires_grad for name, parameter in self.module.named_parameters()}
+
         for parameter in self.module.parameters():
             parameter.requires_grad = self.grad
 
