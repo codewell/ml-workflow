@@ -2,11 +2,11 @@
 name = "cz_customize"
 
 [tool.commitizen.customize]
-message_template = "{{change_type}}:{% if show_message %} {{message}}{% endif %}"
+message_template = "{{change_type}}{% if breaking %}!{% endif %}: {{headline}}\n{{body}}{% if breaking %}\n\nBREAKING CHANGE{% endif %}"
 example = "feature: this feature enables customization through config file"
 schema = "<type>: <body>"
-bump_pattern = "^(break|new|fix|hotfix)"
-bump_map = {"break" = "MAJOR", "new" = "MINOR", "fix" = "PATCH", "hotfix" = "PATCH"}
+bump_pattern = "^(break|feature|fix|tune)"
+bump_map = {"break" = "MAJOR", "feature" = "MINOR", "fix" = "PATCH", "tune" = "PATCH"}
 info_path = "cz_customize_info.txt"
 
 [[tool.commitizen.customize.questions]]
@@ -24,10 +24,16 @@ message = "Select the type of change you are committing"
 
 [[tool.commitizen.customize.questions]]
 type = "input"
-name = "message"
-message = "Body:"
+name = "headline"
+message = "Headline:"
 
 [[tool.commitizen.customize.questions]]
 type = "confirm"
-name = "show_message"
-message = "Do you want to add body message in commit?"
+name = "breaking"
+default = false
+message = "Is this a breaking change?"
+
+[[tool.commitizen.customize.questions]]
+type = "text"
+name = "body"
+message = "<optional> Body:"
