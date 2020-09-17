@@ -25,7 +25,7 @@ The main packages and tools that we build around are:
     python -m workflow.setup_project
 
     pip install -r requirements.txt
-    git init
+    pip freeze > requirements.txt
 
     # reactivate environment to find guild
     deactivate
@@ -48,6 +48,11 @@ You can train a model and inspect the training with:
     pip install -r requirements.txt
     pip install pytest
     python -m pytest
+
+### Test template
+
+    ./setup_template.py
+    ./test_template.py
 
 ### Use development version in project
 The following steps will create a link to the local directory and any changes made to the package there will directly carry over to your project environment.

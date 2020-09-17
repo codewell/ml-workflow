@@ -17,7 +17,9 @@ from workflow.ignite.handlers.learning_rate import (
 )
 from datastream import Datastream
 
-from {{cookiecutter.package_name}} import datastream, architecture, metrics
+from {{cookiecutter.package_name}} import (
+    datastream, architecture, metrics, log_examples
+)
 
 
 def train(config):
@@ -46,11 +48,16 @@ def train(config):
     ])
     print(f'n_parameters: {n_parameters:,}')
 
+    def process_batch(examples):
+        predictions = model.predictions(
+            architecture.FeatureBatch.from_examples(examples)
+        )
+        loss = predictions.loss(examples)
+        return predictions, loss
 
     @workflow.ignite.decorators.train(model, optimizer)
     def train_batch(engine, examples):
-        predictions = model.predicted(tuple(example.image for example in examples))
-        loss = predictions.loss(tuple(example.class_name for example in examples))
+        predictions, loss = process_batch(examples)
         loss.backward()
         return dict(
             examples=examples,
@@ -58,11 +65,9 @@ def train(config):
             loss=loss,
         )
 
-
     @workflow.ignite.decorators.evaluate(model)
     def evaluate_batch(engine, examples):
-        predictions = model.predicted(tuple(example.image for example in examples))
-        loss = predictions.loss(tuple(example.class_name for example in examples))
+        predictions, loss = process_batch(examples)
         return dict(
             examples=examples,
             predictions=predictions.cpu().detach(),
@@ -103,34 +108,15 @@ def train(config):
         tensorboard_logger,
         config,
     ).attach(trainer, evaluators)
-
-    def log_examples(tag):
-        def log_examples_(engine, logger, event_name):
-            n_examples = 5
-            indices = np.random.choice(
-                len(engine.state.output['predictions']),
-                n_examples,
-                replace=False,
-            )
-            logger.writer.add_images(
-                f'{tag}/predictions',
-                np.expand_dims(np.stack([
-                    np.array(engine.state.output['predictions'][index].representation()) / 255
-                    for index in indices
-                ]), -1),
-                trainer.state.epoch,
-                dataformats='NHWC',
-            )
-        return log_examples_
     
     tensorboard_logger.attach(
         trainer,
-        log_examples('train'),
+        log_examples('train', trainer),
         ignite.engine.Events.EPOCH_COMPLETED,
     )
     tensorboard_logger.attach(
         evaluators['evaluate_compare'],
-        log_examples('evaluate_compare'),
+        log_examples('evaluate_compare', trainer),
         ignite.engine.Events.EPOCH_COMPLETED,
     )
 

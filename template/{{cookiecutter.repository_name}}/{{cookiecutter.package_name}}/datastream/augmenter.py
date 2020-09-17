@@ -1,7 +1,7 @@
 from imgaug import augmenters as iaa
 
 
-def _augment_geometric(
+def augment_geometric(
     d_scale=0.05,
     d_translate=0.02,
     d_rotate=3,
@@ -24,5 +24,5 @@ def _augment_geometric(
 
 def augmenter():
     return iaa.Sequential([
-        _augment_geometric(),
+        augment_geometric(),
     ])

@@ -52,8 +52,10 @@ def evaluate(config):
 
     @workflow.ignite.decorators.evaluate(model)
     def evaluate_batch(engine, examples):
-        predictions = model.predicted(tuple(example.image for example in examples))
-        loss = predictions.loss(tuple(example.class_name for example in examples))
+        predictions = model.predictions(
+            architecture.FeatureBatch.from_examples(examples)
+        )
+        loss = predictions.loss(examples)
         return dict(
             examples=examples,
             predictions=predictions.cpu().detach(),

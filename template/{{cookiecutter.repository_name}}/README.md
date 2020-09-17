@@ -10,5 +10,8 @@ guild run prepare
 
 ## Training
 ```
+guild run prepare
 guild run train
+guild run retrain model=<model-hash>
+guild run evaluate model=<model-hash>
 ```

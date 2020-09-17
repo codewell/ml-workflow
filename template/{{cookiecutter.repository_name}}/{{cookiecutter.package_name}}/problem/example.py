@@ -3,14 +3,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from pydantic import BaseModel
 
-
-def text_(draw, text, x, y, fill='black', outline='white', size=12):
-    font = ImageFont.load_default()
-
-    for x_shift, y_shift in product([-1, 0, 1], [-1, 0, 1]):
-        draw.text((x + x_shift, y + y_shift), text, font=font, fill=outline)
-
-    draw.text((x, y), text, font=font, fill=fill)
+from {{cookiecutter.package_name}} import problem, tools
 
 
 class Example(BaseModel):
@@ -21,17 +14,21 @@ class Example(BaseModel):
         arbitrary_types_allowed = True
         allow_mutation = False
 
+    @property
+    def class_index(self):
+        return problem.settings.CLASS_NAMES.index(self.class_name)
+
     def representation(self):
         image = self.image.copy()
         draw = ImageDraw.Draw(image)
-        text_(draw, self.class_name, 10, 10)
+        tools.text_(draw, self.class_name, 10, 10)
         return image
 
     @property
     def _repr_png_(self):
         return self.representation()._repr_png_
 
-    def augment(self, augmenter):
+    def augmented(self, augmenter):
         image = Image.fromarray(
             augmenter.augment(image=np.array(self.image))
         )

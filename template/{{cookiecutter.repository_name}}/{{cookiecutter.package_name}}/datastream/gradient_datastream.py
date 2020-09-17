@@ -18,5 +18,5 @@ def GradientDatastream():
             ))
             for class_name in settings.CLASS_NAMES
         ])
-        .map(lambda example: example.augment(augmenter_))
+        .map(lambda example: example.augmented(augmenter_))
     )

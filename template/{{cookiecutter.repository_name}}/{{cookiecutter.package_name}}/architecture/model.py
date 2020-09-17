@@ -11,7 +11,7 @@ from {{cookiecutter.package_name}} import problem, architecture
 class Model(nn.Module):
     def __init__(self):
         super().__init__()
-        self.core = ModuleCompose(
+        self.logits = ModuleCompose(
             nn.Conv2d(1, 32, 3, 1),
             F.relu,
             nn.Conv2d(32, 64, 3, 1),
@@ -26,26 +26,11 @@ class Model(nn.Module):
             partial(F.log_softmax, dim=1),
         )
 
-    def preprocessed(self, images):
-        return (
-            torch.tensor(
-                np.stack([
-                    np.array(image, dtype=np.float32) / 255 * 2 - 1
-                    for image in images
-                ]),
-                dtype=torch.float32,
-            )
-            .unsqueeze(1)
-            .to(module_device(self))
-        )
+    def forward(self, prepared):
+        return architecture.PredictionBatch(logits=self.logits(prepared))
 
-    def forward(self, preprocessed):
-        return architecture.PredictionBatch(
-            logits=self.core(preprocessed),
-            preprocessed=preprocessed,
-        )
-
-    def predicted(self, images):
+    def predictions(self, feature_batch: architecture.FeatureBatch):
         return self.forward(
-            self.preprocessed(images)
+            feature_batch.stack()
+            .to(module_device(self))
         )

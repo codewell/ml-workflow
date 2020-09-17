@@ -1,6 +1,6 @@
 - package: {{cookiecutter.repository_name}}-package
 
-- model: {{cookiecutter.repository_name}}-model
+- model: simple-r1
   sourcecode:
     - '*.py'
     - guild.yml
@@ -11,25 +11,25 @@
           - checkpoints
   operations:
     prepare:
-      main: prepare
+      main: operations/prepare
       flags-import: all
       output-scalars: off
     search_lr:
-      main: search_lr
+      main: operations/search_lr
       flags-import: all
       output-scalars: off
       requires:
         - prepare
         - splits
     train:
-      main: train
+      main: operations/train
       flags-import: all
       output-scalars: off
       requires:
         - prepare
         - splits
     retrain:
-      main: train
+      main: operations/train
       flags-import: all
       output-scalars: off
       requires:
@@ -37,7 +37,7 @@
         - prepare
         - splits
     evaluate:
-      main: evaluate
+      main: operations/evaluate
       flags-import: all
       output-scalars: off
       requires:
