@@ -1,9 +1,12 @@
 - package: {{cookiecutter.repository_name}}-package
+  data-files:
+    - {{cookiecutter.package_name}}/splits/*.json
 
 - model: simple-r1
   sourcecode:
     - '*.py'
     - guild.yml
+    - {{cookiecutter.package_name}}/splits/*.json
     - exclude:
         dir:
           - input
