@@ -3,6 +3,7 @@ set -o errexit -o nounset -o pipefail -o xtrace
 
 cd test_template
 shopt -s extglob 
+rm -rf .github
 rm -rf !(venv)
 source venv/bin/activate
 echo "repository

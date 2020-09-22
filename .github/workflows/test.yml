@@ -1,0 +1,52 @@
+name: Test
+
+on: [push]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        # This path is specific to Ubuntu
+        path: ~/.cache/pip
+        # Look to see if there is a cache hit for the corresponding requirements file
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}-${{ hashFiles('dev_requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          ${{ runner.os }}-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r dev_requirements.txt
+        pip install -r requirements.txt
+
+    - name: Test with pytest
+      run: |
+        pytest
+
+    - name: Setup mnist template
+      run: |
+        pip install .
+        ./setup_template.sh ${{ matrix.python-version }}
+
+    - name: Run mnist template
+      run: |
+        ./test_template.sh
+
+    - name: Build wheels
+      run: |
+        python setup.py bdist_wheel --python-tag py3
