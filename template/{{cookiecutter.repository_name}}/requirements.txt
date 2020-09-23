@@ -1,6 +1,0 @@
-guildai>=0.7.0.post1
-torch>=1.6.0
-numpy>=1.18.3
-ml-workflow>=0.7.4
-flake8>=3.8.3
-torchvision>=0.7.0
